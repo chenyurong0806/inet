@@ -1,4 +1,4 @@
-const API = "https://api.chenyurong.qzz.io/api"; // 注意：此处直接指定到 /api
+const API = "api.inets.de5.net/api"; // 注意：此处直接指定到 /api
 const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
 let currentPath = "";   
@@ -374,3 +374,4 @@ function formatBytes(bytes, decimals = 2) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
+
