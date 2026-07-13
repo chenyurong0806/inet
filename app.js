@@ -23,17 +23,22 @@ async function upload() {
 
 
 
-    await fetch(
+    fetch(
         API + "/upload",
         {
-
             method: "POST",
+            body: data,
+            credentials: "include"
+        }
+    )
 
-            body: data
-
-        });
-
-
+    fetch(
+        API + "/list",
+        {
+            credentials: "include"
+        }
+    )
+    
     alert(
         "上传成功"
     );
