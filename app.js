@@ -1,4 +1,4 @@
-const API = "api.inets.de5.net/api"; // 注意：此处直接指定到 /api
+const API = "https://api.inets.de5.net/api"; // 注意：此处直接指定到 /api
 const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
 let currentPath = "";   
