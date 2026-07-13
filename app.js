@@ -1,5 +1,5 @@
 const API =
-    "https://inet.chenyurong0806.workers.dev/list";
+    "https://inet.chenyurong0806.workers.dev";
 
 
 
@@ -23,22 +23,21 @@ async function upload() {
 
 
 
-    fetch(
+    await fetch(
         API + "/upload",
         {
             method: "POST",
             body: data,
             credentials: "include"
         }
-    )
-
-    fetch(
+    );
+    await fetch(
         API + "/list",
         {
             credentials: "include"
         }
-    )
-    
+    );
+
     alert(
         "上传成功"
     );
