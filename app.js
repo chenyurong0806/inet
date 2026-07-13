@@ -1,5 +1,5 @@
 const API =
-    "https://inet.chenyurong0806.workers.dev/";
+    "https://inet.chenyurong0806.workers.dev/list";
 
 
 
