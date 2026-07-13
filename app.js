@@ -1,4 +1,4 @@
-const API = "https://inet.chenyurong0806.workers.dev/api"; // 注意：此处直接指定到 /api
+const API = "https://api.chenyurong.qzz.io/api"; // 注意：此处直接指定到 /api
 const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
 let currentPath = "";   
