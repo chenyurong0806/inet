@@ -1039,9 +1039,9 @@
         const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
         // ★★★ 分片上传配置 ★★★
-        const CHUNK_SIZE = 5 * 1024 * 1024; // 每个分片 10MB
-        const MAX_CONCURRENT_CHUNKS = 1; // 最多同时上传 1 个分片
-        const MAX_CHUNK_RETRIES = 5; // 每个分片最多重试 5 次
+        const CHUNK_SIZE = 2 * 1024 * 1024; // 每个分片 2MB
+        const MAX_CONCURRENT_CHUNKS = 1; // 最多同时上传 2 个分片
+        const MAX_CHUNK_RETRIES = 4; // 每个分片最多重试 3 次
 
         let currentPath = "";
         let currentView = "drive";
@@ -1635,7 +1635,7 @@
                     }
                     if (attempt < MAX_CHUNK_RETRIES - 1) {
                         // 指数退避：2s, 4s, 8s...
-                        const delay = 2000 * Math.pow(2, attempt);
+                        const delay = 1000 * Math.pow(2, attempt);
                         console.warn(`分片 ${chunkIndex} 上传失败，${delay}ms 后重试 (${attempt + 1}/${MAX_CHUNK_RETRIES})`,
                             err);
                         await new Promise(r => setTimeout(r, delay));
