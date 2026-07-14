@@ -1618,25 +1618,17 @@
 
                 showSnackbar("正在下载...");
 
-                // 通过 fetch 获取文件数据，再转成 Blob 下载
-                const fileResponse = await fetch(data.url);
-                if (!fileResponse.ok) throw new Error("下载失败");
-                const blob = await fileResponse.blob();
-
-                const blobUrl = URL.createObjectURL(blob);
+                // 直接触发浏览器下载，不在新标签页中打开
                 const a = document.createElement("a");
-                a.href = blobUrl;
-                // 从文件名中提取原始名称
-                const name = activeFocusedItem.key.split("/").pop();
-                a.download = name;
+                a.href = data.url;
+                a.download = "";              // 建议浏览器下载，而非导航
+                a.style.display = "none";
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                URL.revokeObjectURL(blobUrl); // 释放内存
 
-                showSnackbar("下载成功");
             } catch (e) {
-                showSnackbar("下载失败: " + e.message);
+                showSnackbar("下载失败");
             }
             closeActionMenu();
         }
