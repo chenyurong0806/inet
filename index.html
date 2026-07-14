@@ -1039,7 +1039,7 @@
         const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
         // ★★★ 分片上传配置 ★★★
-        const CHUNK_SIZE = 5 * 1024 * 1024; // 每个分片 5MB
+        const CHUNK_SIZE = 15 * 1024 * 1024; // 每个分片 15MB
         const MAX_CONCURRENT_CHUNKS = 3; // 最多同时上传 3 个分片
         const MAX_CHUNK_RETRIES = 3; // 每个分片最多重试 3 次
 
@@ -1661,6 +1661,15 @@
             let firstError = null;
             let aborted = false;
 
+            // 超时保护：整个上传最多 30 分钟
+            const globalTimeout = setTimeout(() => {
+                if (!aborted) {
+                    firstError = new Error("上传超时（超过30分钟）");
+                    aborted = true;
+                    if (activeUploadAborter) activeUploadAborter.abort();
+                }
+            }, 30 * 60 * 1000);
+
             onProgress(completedCount, totalChunks);
 
             async function worker() {
@@ -1671,19 +1680,18 @@
                         completedCount++;
                         onProgress(completedCount, totalChunks);
                     } catch (err) {
-                        if (err.name === 'AbortError' || err.message === 'Unauthorized') {
+                        if (!aborted) {
                             aborted = true;
-                            if (!firstError) firstError = err;
-                        } else {
-                            aborted = true;
-                            if (!firstError) firstError = err;
+                            firstError = err;
+                            // 取消其他进行中的请求
+                            if (activeUploadAborter) activeUploadAborter.abort();
                         }
                         break;
                     }
                 }
             }
 
-            // 启动并发 worker
+            // 启动并发 workers
             const concurrency = Math.min(MAX_CONCURRENT_CHUNKS, totalChunks);
             const workers = [];
             for (let i = 0; i < concurrency; i++) {
@@ -1691,6 +1699,7 @@
             }
 
             await Promise.all(workers);
+            clearTimeout(globalTimeout);
 
             if (firstError) {
                 throw firstError;
