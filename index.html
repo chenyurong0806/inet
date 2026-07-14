@@ -1605,20 +1605,27 @@
         async function uploadChunkWithRetry(file, chunkIndex, chunkBlob, totalChunks, uploadId, targetKey, signal) {
             let lastError = null;
 
+            // ★ 修复：将参数移至 URL，舍弃 FormData
+            const params = new URLSearchParams({
+                key: targetKey,
+                chunkIndex: chunkIndex,
+                totalChunks: totalChunks,
+                uploadId: uploadId
+            });
+            const url = API + "/upload/chunk?" + params.toString();
+
             for (let attempt = 0; attempt < MAX_CHUNK_RETRIES; attempt++) {
                 try {
-                    const formData = new FormData();
-                    formData.append("file", chunkBlob, file.name + ".part" + chunkIndex);
-                    formData.append("key", targetKey);
-                    formData.append("chunkIndex", chunkIndex);
-                    formData.append("totalChunks", totalChunks);
-                    formData.append("uploadId", uploadId);
-
                     const token = localStorage.getItem("auth_token") || "";
-                    const response = await fetch(API + "/upload/chunk", {
+                    const response = await fetch(url, {
                         method: "POST",
-                        headers: { "Authorization": `Bearer ${token}` },
-                        body: formData,
+                        headers: {
+                            "Authorization": `Bearer ${token}`,
+                            // 声明发送的是纯二进制流
+                            "Content-Type": "application/octet-stream"
+                        },
+                        // ★ 修复：直接发送 Blob 数据，不包装
+                        body: chunkBlob,
                         signal: signal,
                     });
 
@@ -1635,15 +1642,12 @@
                     return response;
                 } catch (err) {
                     lastError = err;
-                    // 如果是取消操作或认证错误，不重试直接抛出
                     if (err.name === 'AbortError' || err.message === "Unauthorized") {
                         throw err;
                     }
                     if (attempt < MAX_CHUNK_RETRIES - 1) {
-                        // 指数退避：2s, 4s, 8s...
                         const delay = 1000 * Math.pow(2, attempt);
-                        console.warn(`分片 ${chunkIndex} 上传失败，${delay}ms 后重试 (${attempt + 1}/${MAX_CHUNK_RETRIES})`,
-                            err);
+                        console.warn(`分片 ${chunkIndex} 上传失败，${delay}ms 后重试`, err);
                         await new Promise(r => setTimeout(r, delay));
                     }
                 }
