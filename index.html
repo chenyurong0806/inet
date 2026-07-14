@@ -407,9 +407,15 @@
             display: none;
             animation: fadeIn 0.2s ease;
         }
+
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         .file-list-view {
@@ -898,8 +904,7 @@
                     <span id="user-name">加载中...</span>
                 </div>
                 <div class="user-menu" id="user-menu">
-                    <div class="menu-item ripple-btn"
-                        onclick="window.open('https://user.chenyurong.qzz.io', '_blank')">
+                    <div class="menu-item ripple-btn" onclick="window.open('https://user.chenyurong.qzz.io', '_blank')">
                         <span class="material-symbols-outlined">manage_accounts</span>管理我的账号
                     </div>
                     <div class="menu-item ripple-btn danger-item" onclick="handleLogout()">
@@ -1211,16 +1216,22 @@
         function toggleDrawer() {
             const drawer = document.getElementById("app-drawer");
             const overlay = document.getElementById("drawer-overlay");
-            if (window.innerWidth >= 900) { drawer.classList.toggle("closed"); } else { drawer.classList.toggle(
+            if (window.innerWidth >= 900) { drawer.classList.toggle("closed"); } else {
+                drawer.classList.toggle(
                     "open");
-                overlay.classList.toggle("show"); }
+                overlay.classList.toggle("show");
+            }
         }
 
-        function toggleUserMenu(e) { e.stopPropagation();
-            document.getElementById("user-menu").classList.toggle("show"); }
+        function toggleUserMenu(e) {
+            e.stopPropagation();
+            document.getElementById("user-menu").classList.toggle("show");
+        }
 
-        function handleLogout() { localStorage.removeItem("auth_token");
-            redirectToLogin(); }
+        function handleLogout() {
+            localStorage.removeItem("auth_token");
+            redirectToLogin();
+        }
 
         function switchView(view) {
             currentView = view;
@@ -1475,8 +1486,10 @@
             });
 
             if (isFolder) {
-                row.addEventListener("dragover", (e) => { e.preventDefault();
-                    row.classList.add("drag-over"); });
+                row.addEventListener("dragover", (e) => {
+                    e.preventDefault();
+                    row.classList.add("drag-over");
+                });
                 row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
                 row.addEventListener("drop", (e) => {
                     e.preventDefault();
@@ -1487,7 +1500,7 @@
                         if (items.length > 0) {
                             executeBatchMoveAPI(items, key);
                         }
-                    } catch (err) {}
+                    } catch (err) { }
                 });
             }
             return row;
@@ -1515,9 +1528,11 @@
             });
         }
 
-        function jumpToPath(path) { currentPath = path;
+        function jumpToPath(path) {
+            currentPath = path;
             selectedKeys.clear();
-            renderWorkspace(); }
+            renderWorkspace();
+        }
 
         // ==================== ★★★ 分片上传核心逻辑 ★★★ ====================
 
@@ -1846,6 +1861,8 @@
                     }
                     menu.innerHTML +=
                         `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
+                    // 新增：复制共享链接
+                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerCopyShareLink()"><span class="material-symbols-outlined">link</span>复制共享链接</div>`;
                 }
 
                 menu.innerHTML +=
@@ -1877,6 +1894,22 @@
             if (leftPos + menu.offsetWidth > window.innerWidth) leftPos = window.innerWidth - menu.offsetWidth - 10;
             menu.style.left = `${leftPos}px`;
         }
+
+        async function triggerCopyShareLink() {
+            try {
+                const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
+                const data = await res.json();
+                if (!data.success || !data.url) throw new Error("获取链接失败");
+
+                // 将链接写入剪贴板
+                await navigator.clipboard.writeText(data.url);
+                showSnackbar("共享链接已复制到剪贴板");
+            } catch (e) {
+                showSnackbar("获取共享链接失败");
+            }
+            closeActionMenu();
+        }
+
 
         function closeActionMenu() { document.getElementById("action-menu").classList.remove("show"); }
 
@@ -2296,7 +2329,7 @@
 
         // ==================== 全局监听 ====================
         function setupGlobalListeners() {
-            document.addEventListener("mousedown", function(e) {
+            document.addEventListener("mousedown", function (e) {
                 const rippleBtn = e.target.closest('.ripple-btn');
                 if (rippleBtn) createRipple(e, rippleBtn);
             });
@@ -2312,7 +2345,7 @@
                     const drawer = document.getElementById("app-drawer");
                     const overlay = document.getElementById("drawer-overlay");
                     if (drawer.classList.contains("open") && !drawer.contains(e.target) && !e.target.closest(
-                            '.icon-btn')) {
+                        '.icon-btn')) {
                         drawer.classList.remove("open");
                         overlay.classList.remove("show");
                     }
@@ -2322,16 +2355,26 @@
             document.addEventListener("keydown", (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault();
-                    execUndo(); }
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault();
-                    execRedo(); }
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') { e.preventDefault();
-                    handleCopy(); }
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') { e.preventDefault();
-                    handleCut(); }
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') { e.preventDefault();
-                    handlePaste(); }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                    e.preventDefault();
+                    execUndo();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+                    e.preventDefault();
+                    execRedo();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+                    e.preventDefault();
+                    handleCopy();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+                    e.preventDefault();
+                    handleCut();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+                    e.preventDefault();
+                    handlePaste();
+                }
                 if (e.altKey && e.key.toLowerCase() === 'a') {
                     e.preventDefault();
                     currentRenderedItems.forEach(item => selectedKeys.add(item.key));
