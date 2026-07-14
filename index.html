@@ -246,7 +246,6 @@
         <div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
 
         <aside class="sidebar" id="app-drawer">
-            <!-- 移动端侧边栏 Logo -->
             <div class="sidebar-header">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px;">
                     <circle cx="12" cy="12" r="10" fill="#F57C00"/>
@@ -304,10 +303,8 @@
         </main>
     </div>
 
-    <!-- 动态上下文菜单，容器预留 -->
     <div class="context-menu" id="action-menu"></div>
 
-    <!-- 新建文件夹对话框 -->
     <div class="dialog-overlay" id="folder-dialog">
         <div class="dialog-card">
             <div class="dialog-title">新建文件夹</div>
@@ -319,7 +316,6 @@
         </div>
     </div>
 
-    <!-- 重命名对话框 -->
     <div class="dialog-overlay" id="rename-dialog">
         <div class="dialog-card">
             <div class="dialog-title">重命名</div>
@@ -331,7 +327,6 @@
         </div>
     </div>
 
-    <!-- 移动对话框 (严格仿照提供图片UI) -->
     <div class="dialog-overlay" id="move-dialog">
         <div class="dialog-card">
             <div class="move-dialog-header">
@@ -349,8 +344,7 @@
             </div>
 
             <div class="move-tree-container" id="move-tree-container">
-                <!-- Tree generated via JS -->
-            </div>
+                </div>
         </div>
     </div>
 
@@ -628,7 +622,8 @@
 
         function createRowNode(name, date, size, icon, key, isFolder, index, isSelected, isStarred, showFullPath) {
             const row = document.createElement("div");
-            row.className = `file-row ripple-btn ${isSelected ? 'selected' : ''}`;
+            // 【移除 ripple-btn，删除了文件行的点击波纹扩散】
+            row.className = `file-row ${isSelected ? 'selected' : ''}`;
             row.draggable = true; 
             
             const displayPath = showFullPath ? `<div style="font-size:11px; color:var(--md-sys-color-outline); margin-top:2px;">${key}</div>` : '';
@@ -647,6 +642,7 @@
                 <div><button class="action-menu-btn ripple-btn" onclick="openContextMenu(event, '${key}', ${isFolder})"><span class="material-symbols-outlined">more_vert</span></button></div>
             `;
             
+            // 【单击事件：现在统一为仅控制选择/多选状态】
             row.addEventListener("click", (e) => {
                 if (e.target.closest('.action-menu-btn')) return;
                 
@@ -662,45 +658,58 @@
                     for(let i = start; i <= end; i++) selectedKeys.add(currentRenderedItems[i].key);
                     renderWorkspace();
                 } else {
-                    if(isFolder) {
-                        if (currentView === "starred") {
-                            // jump to drive view folder
-                            currentView = "drive";
-                            document.getElementById("nav-starred").classList.remove("active");
-                            document.getElementById("nav-drive").classList.add("active");
-                        }
-                        selectedKeys.clear();
-                        currentPath = key;
-                        renderWorkspace();
-                    } else {
-                        selectedKeys.clear();
-                        selectedKeys.add(key);
-                        lastSelectedIndex = index;
-                        renderWorkspace();
-                    }
+                    selectedKeys.clear();
+                    selectedKeys.add(key);
+                    lastSelectedIndex = index;
+                    renderWorkspace();
                 }
             });
+
+            // 【新增双击事件：双击文件夹时才进入下一级路径，规避多选和拖拽的冲突】
+            if (isFolder) {
+                row.addEventListener("dblclick", (e) => {
+                    if (e.target.closest('.action-menu-btn')) return;
+                    if (currentView === "starred") {
+                        currentView = "drive";
+                        document.getElementById("nav-starred").classList.remove("active");
+                        document.getElementById("nav-drive").classList.add("active");
+                    }
+                    selectedKeys.clear();
+                    currentPath = key;
+                    renderWorkspace();
+                });
+            }
 
             row.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 openContextMenu(e, key, isFolder);
             });
 
+            // 【开始拖拽：如果当前拖拽项未在多选区中，则专选该项；如果在，则保持多选区并打包进行批量移动】
             row.addEventListener("dragstart", (e) => {
-                e.dataTransfer.setData("application/json", JSON.stringify({ key, isFolder }));
+                if (!selectedKeys.has(key)) {
+                    selectedKeys.clear();
+                    selectedKeys.add(key);
+                    lastSelectedIndex = index;
+                    renderWorkspace();
+                }
+                const itemsToMove = currentRenderedItems.filter(item => selectedKeys.has(item.key));
+                e.dataTransfer.setData("application/json", JSON.stringify({ items: itemsToMove }));
                 e.dataTransfer.effectAllowed = "move";
             });
 
             if (isFolder) {
                 row.addEventListener("dragover", (e) => { e.preventDefault(); row.classList.add("drag-over"); });
                 row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+                // 【松开拖拽：提取打包好的多选项，触发全新的批量移动逻辑】
                 row.addEventListener("drop", (e) => {
                     e.preventDefault();
                     row.classList.remove("drag-over");
                     try {
                         const source = JSON.parse(e.dataTransfer.getData("application/json"));
-                        if (source.key !== key && !key.startsWith(source.key)) {
-                            executeMoveAPI(source.key, key + source.key.split('/').filter(Boolean).pop() + (source.isFolder ? '/' : ''));
+                        const items = source.items || [];
+                        if (items.length > 0) {
+                            executeBatchMoveAPI(items, key);
                         }
                     } catch (err) {}
                 });
@@ -1036,6 +1045,30 @@
         async function executeMoveAPI(oldKey, newKey) {
             await runMutation(async () => {
                 await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey, newKey }) });
+            }, "操作成功");
+        }
+
+        // 【新增的批量移动方法：在单个历史动作快照内并发或串行运行多个网络请求，防止快照被污染且确保只触发单次加载】
+        async function executeBatchMoveAPI(items, targetFolderKey) {
+            await runMutation(async () => {
+                for (const item of items) {
+                    if (item.key !== targetFolderKey && !targetFolderKey.startsWith(item.key)) {
+                        const name = item.key.split('/').filter(Boolean).pop();
+                        const newKey = targetFolderKey + name + (item.isFolder ? '/' : '');
+                        
+                        if(starredKeys.has(item.key)) {
+                            starredKeys.delete(item.key);
+                            starredKeys.add(newKey);
+                        }
+                        
+                        await fetchAPI(`/move`, { 
+                            method: "POST", 
+                            headers: { "Content-Type": "application/json" }, 
+                            body: JSON.stringify({ oldKey: item.key, newKey }) 
+                        });
+                    }
+                }
+                saveStarredKeys();
             }, "操作成功");
         }
 
