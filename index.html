@@ -891,7 +891,7 @@
             <div class="search-container">
                 <div class="search-wrapper">
                     <span class="material-symbols-outlined">search</span>
-                    <input type="text" id="search-input" placeholder="搜索文件或格式 (空格分词)..."
+                    <input type="text" id="search-input" placeholder="搜索关键词"
                         oninput="handleAdvancedSearch()" onfocus="handleAdvancedSearch()">
                     <span id="search-count"></span>
                 </div>
@@ -1039,7 +1039,7 @@
         const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
         // ★★★ 分片上传配置 ★★★
-        const CHUNK_SIZE = 5 * 1024 * 1024; // 每个分片 5MB
+        const CHUNK_SIZE = 10 * 1024 * 1024; // 每个分片 10MB
         const MAX_CONCURRENT_CHUNKS = 1; // 最多同时上传 1 个分片
         const MAX_CHUNK_RETRIES = 3; // 每个分片最多重试 3 次
 
