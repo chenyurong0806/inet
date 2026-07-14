@@ -1,15 +1,15 @@
 const API = "https://api.inets.de5.net/api"; // 注意：此处直接指定到 /api
 const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
-let currentPath = "";   
-let rawFilesData = [];  
-let activeFocusedItem = null; 
-let targetMoveFolder = "";   
+let currentPath = "";
+let rawFilesData = [];
+let activeFocusedItem = null;
+let targetMoveFolder = "";
 
 // [核心修复]：跨域 Fetch 包装器，自动带上 Token
 async function fetchAPI(endpoint, options = {}) {
     const token = localStorage.getItem("auth_token") || "";
-    
+
     const headers = {
         ...(options.headers || {}),
         "Authorization": `Bearer ${token}`
@@ -25,7 +25,7 @@ async function fetchAPI(endpoint, options = {}) {
         window.location.href = `${LOGIN_SYSTEM}/api/sso-check?from=${encodeURIComponent(window.location.href)}`;
         throw new Error("Unauthorized");
     }
-    
+
     return response;
 }
 
@@ -53,7 +53,7 @@ async function fetchFileList() {
         rawFilesData = data.files || [];
         renderWorkspace();
     } catch (err) {
-        if(err.message !== "Unauthorized") {
+        if (err.message !== "Unauthorized") {
             showSnackbar("获取文件列表失败");
         }
     }
@@ -72,7 +72,7 @@ function renderWorkspace() {
         const key = item.key;
         if (key.startsWith(currentPath)) {
             const relativeKey = key.substring(currentPath.length);
-            if (!relativeKey) return; 
+            if (!relativeKey) return;
 
             const slashIndex = relativeKey.indexOf("/");
             if (slashIndex !== -1) {
@@ -177,7 +177,7 @@ async function handleFileSelect(input) {
         showSnackbar("上传失败");
     } finally {
         setTimeout(() => { progFill.style.display = "none"; progFill.style.width = "0%"; }, 500);
-        input.value = ""; 
+        input.value = "";
     }
 }
 
@@ -207,37 +207,61 @@ async function triggerCreateFolder() {
     closeDialog('folder-dialog');
 }
 
-// 5. 下载文件 [已修复]
+// 5. 下载文件
+// 改为获取 R2 CDN 下载链接，不经过 Worker 转发
 async function triggerDownload() {
+
     if (activeFocusedItem.isFolder) {
         showSnackbar("暂不支持下载整个文件夹");
         return;
     }
-    // 跨域带 Auth 头的下载不能直接使用 window.open，需要用 Blob 接收并转换
+
+
     try {
-        const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
-        const blob = await res.blob();
-        
-        // 解析响应头中的文件名
-        const disposition = res.headers.get("Content-Disposition");
-        let filename = activeFocusedItem.key.split('/').pop();
-        if (disposition && disposition.indexOf('filename=') !== -1) {
-            const matches = /filename="([^"]+)"/.exec(disposition);
-            if (matches != null && matches[1]) filename = matches[1];
+
+        // 请求 Worker 获取下载地址
+        const res = await fetchAPI(
+            `/download?key=${encodeURIComponent(activeFocusedItem.key)}`
+        );
+
+
+        const data = await res.json();
+
+
+        if (!data.success || !data.url) {
+            throw new Error(
+                data.message || "获取下载地址失败"
+            );
         }
 
-        const url = window.URL.createObjectURL(blob);
+
+        /*
+          直接跳转到 R2 CDN 地址
+
+          浏览器直接连接：
+          file.inets.de5.net
+
+          不经过 Worker
+        */
         const a = document.createElement("a");
-        a.href = url;
-        a.download = decodeURIComponent(filename);
+        a.href = data.url;
+        a.target = "_blank";
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
         a.remove();
+
+
         showSnackbar("下载开始");
+
+
     } catch (e) {
+
+        console.error(e);
         showSnackbar("下载失败");
+
     }
+
+
     closeActionMenu();
 }
 
@@ -279,7 +303,7 @@ function openMoveDialog() {
         box.appendChild(row);
     });
 
-    targetMoveFolder = ""; 
+    targetMoveFolder = "";
     openDialog('move-dialog');
 }
 
@@ -315,7 +339,7 @@ async function triggerMoveFile() {
 function handleSearch() {
     const query = document.getElementById("search-input").value.toLowerCase().trim();
     if (!query) { renderWorkspace(); return; }
-    
+
     const container = document.getElementById("file-rows-container");
     container.innerHTML = "";
 
