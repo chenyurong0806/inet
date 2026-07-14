@@ -9,18 +9,19 @@
 
     <style>
         :root {
-            /* Google Material Design 3 橙色主题 (Fresh Orange) */
+            /* Google Material Design 3 橙色主题 */
             --md-sys-color-background: #FFFBFA;
             --md-sys-color-surface: #FFFFFF;
             --md-sys-color-surface-container: #FFEDE4;
             --md-sys-color-surface-container-high: #FFDBC7;
-            --md-sys-color-primary: #F57C00; /* 清新橙色 */
+            --md-sys-color-primary: #F57C00; 
             --md-sys-color-primary-container: #FFDCC2;
             --md-sys-color-on-primary-container: #3E1C00;
             --md-sys-color-secondary-container: #FFECB3;
             --md-sys-color-on-surface: #201A17;
             --md-sys-color-on-surface-variant: #52443C;
             --md-sys-color-outline: #857368;
+            --md-sys-color-outline-variant: #D5C2B6;
             --md-sys-color-error: #BA1A1A;
 
             /* 形状与过渡 */
@@ -28,7 +29,7 @@
             --md-shape-medium: 12px;
             --md-shape-large: 16px;
             --md-shape-full: 999px;
-            --md-transition: 0.25s cubic-bezier(0.2, 0, 0, 1);
+            --md-transition: 0.2s cubic-bezier(0.2, 0, 0, 1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; user-select: none; }
@@ -41,25 +42,25 @@
             overflow: hidden; 
         }
 
+        /* 通用涟漪基础类 */
+        .ripple-btn { position: relative; overflow: hidden; }
+        .ripple { position: absolute; border-radius: 50%; transform: scale(0); animation: ripple-anim 0.6s linear; background-color: rgba(0, 0, 0, 0.12); pointer-events: none; }
+        @keyframes ripple-anim { to { transform: scale(4); opacity: 0; } }
+
         /* 顶部应用栏 */
         .top-app-bar { height: 64px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; background-color: var(--md-sys-color-background); z-index: 10; }
         .top-bar-left { display: flex; align-items: center; gap: 8px; }
-        .top-bar-center { display: flex; align-items: center; justify-content: center; gap: 16px; flex: 1; }
-        .top-bar-right { display: flex; align-items: center; gap: 16px; }
+        .top-bar-right { display: flex; align-items: center; gap: 16px; margin-left: auto;}
 
-        .icon-btn { position: relative; overflow: hidden; border: none; background: transparent; cursor: pointer; width: 48px; height: 48px; border-radius: var(--md-shape-full); display: flex; align-items: center; justify-content: center; color: var(--md-sys-color-on-surface-variant); transition: var(--md-transition); }
+        .icon-btn { border: none; background: transparent; cursor: pointer; width: 48px; height: 48px; border-radius: var(--md-shape-full); display: flex; align-items: center; justify-content: center; color: var(--md-sys-color-on-surface-variant); transition: var(--md-transition); }
         .icon-btn:hover { background-color: rgba(0,0,0,0.06); }
-        
-        /* 居中主操作按钮 */
-        .center-action-btn { position: relative; overflow: hidden; border: none; cursor: pointer; width: 48px; height: 48px; border-radius: var(--md-shape-large); display: flex; align-items: center; justify-content: center; background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); transition: var(--md-transition); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .center-action-btn:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); background-color: #FFCFA8; }
 
         .logo-text { font-size: 20px; font-weight: 700; color: var(--md-sys-color-primary); display: flex; align-items: center; gap: 12px; }
         .logo-text svg { width: 32px; height: 32px; }
 
-        /* 用户组件及下拉菜单 */
+        /* 用户组件 */
         .user-profile-wrapper { position: relative; }
-        .user-profile { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: var(--md-shape-full); background-color: var(--md-sys-color-surface-container); cursor: pointer; position: relative; overflow: hidden; transition: var(--md-transition); }
+        .user-profile { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: var(--md-shape-full); background-color: var(--md-sys-color-surface-container); cursor: pointer; transition: var(--md-transition); }
         .user-profile:hover { background-color: var(--md-sys-color-surface-container-high); }
         .user-avatar { width: 32px; height: 32px; border-radius: 50%; background-color: var(--md-sys-color-primary); color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 14px; overflow: hidden; }
         .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -72,21 +73,25 @@
         .app-container { display: flex; flex: 1; overflow: hidden; position: relative; }
 
         /* 侧边栏 */
-        .sidebar { width: 280px; padding: 12px; display: flex; flex-direction: column; gap: 4px; background-color: var(--md-sys-color-background); transition: var(--md-transition); flex-shrink: 0; }
-        .nav-item { position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-radius: var(--md-shape-full); cursor: pointer; color: var(--md-sys-color-on-surface-variant); transition: var(--md-transition); }
+        .sidebar { width: 280px; display: flex; flex-direction: column; gap: 4px; background-color: var(--md-sys-color-background); transition: var(--md-transition); flex-shrink: 0; }
+        .sidebar-header { display: none; padding: 16px 24px; align-items: center; gap: 12px; }
+        .nav-items-container { padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-radius: var(--md-shape-full); cursor: pointer; color: var(--md-sys-color-on-surface-variant); transition: var(--md-transition); }
         .nav-item:hover { background-color: rgba(0,0,0,0.04); }
         .nav-item.active { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); font-weight: 500; }
 
         /* 工作区 */
         .main-workspace { flex: 1; background-color: var(--md-sys-color-surface); margin: 0 16px 16px 16px; border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: var(--md-transition); }
         
-        /* 面包屑 */
-        .breadcrumb-container { padding: 16px 24px; display: flex; align-items: center; gap: 4px; font-size: 18px; color: var(--md-sys-color-on-surface); font-weight: 500; border-bottom: 1px solid var(--md-sys-color-surface-container); }
+        /* 面包屑 & 撤销重做 */
+        .breadcrumb-container { padding: 12px 24px; display: flex; align-items: center; border-bottom: 1px solid var(--md-sys-color-surface-container); min-height: 64px;}
+        .breadcrumb-text-area { flex: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 18px; color: var(--md-sys-color-on-surface); font-weight: 500; }
         .crumb { cursor: pointer; padding: 4px 8px; border-radius: var(--md-shape-small); transition: var(--md-transition); }
         .crumb:hover { background-color: var(--md-sys-color-surface-container); }
         .crumb-separator { font-size: 20px; color: var(--md-sys-color-outline); }
+        .history-actions { display: flex; align-items: center; gap: 4px; }
 
-        /* 搜索框增强 */
+        /* 搜索框 */
         .search-container { position: relative; }
         .search-wrapper { background-color: var(--md-sys-color-surface-container); border-radius: var(--md-shape-full); padding: 8px 16px; display: flex; align-items: center; gap: 8px; transition: var(--md-transition); width: 320px; }
         .search-wrapper:focus-within { background-color: var(--md-sys-color-surface); box-shadow: 0 0 0 2px var(--md-sys-color-primary); }
@@ -104,11 +109,12 @@
         .progress-bar-container { width: 100%; height: 4px; background-color: transparent; position: relative; overflow: hidden; }
         .progress-bar-fill { height: 100%; width: 0%; background-color: var(--md-sys-color-primary); transition: width 0.2s ease; display: none; }
 
-        /* 文件列表与拖拽/多选 */
-        .file-list-view { flex: 1; overflow-y: auto; padding: 8px 0; }
-        .list-header { display: grid; grid-template-columns: 2.5fr 1fr 1fr 60px; padding: 12px 24px; font-size: 13px; font-weight: 500; color: var(--md-sys-color-on-surface-variant); border-bottom: 1px solid var(--md-sys-color-surface-container); }
+        /* 文件列表 */
+        .file-list-view { flex: 1; overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column;}
+        .list-header { display: grid; grid-template-columns: 2.5fr 1fr 1fr auto; padding: 0 24px; font-size: 13px; font-weight: 500; color: var(--md-sys-color-on-surface-variant); border-bottom: 1px solid var(--md-sys-color-surface-container); align-items: center; min-height: 48px; }
+        .list-header-actions { display: flex; align-items: center; gap: 4px; justify-content: flex-end;}
         
-        .file-row { position: relative; overflow: hidden; display: grid; grid-template-columns: 2.5fr 1fr 1fr 60px; padding: 12px 24px; align-items: center; cursor: pointer; border-bottom: 1px solid var(--md-sys-color-surface-container); transition: background-color 0.15s, outline 0.15s; outline: 2px solid transparent; outline-offset: -2px; }
+        .file-row { display: grid; grid-template-columns: 2.5fr 1fr 1fr 60px; padding: 12px 24px; align-items: center; cursor: pointer; border-bottom: 1px solid var(--md-sys-color-surface-container); transition: background-color 0.15s, outline 0.15s; outline: 2px solid transparent; outline-offset: -2px; }
         .file-row:hover { background-color: var(--md-sys-color-surface-container); }
         .file-row.selected { background-color: var(--md-sys-color-secondary-container); outline: 2px solid var(--md-sys-color-primary); }
         .file-row.drag-over { background-color: var(--md-sys-color-primary-container) !important; outline: 2px dashed var(--md-sys-color-primary); }
@@ -117,50 +123,75 @@
         .cell-info { font-size: 13px; color: var(--md-sys-color-on-surface-variant); pointer-events: none; }
         .icon-folder { color: var(--md-sys-color-primary); }
         .icon-file { color: var(--md-sys-color-outline); }
+        .icon-star { color: #F4B400; font-size: 18px; margin-left: 8px; } /* Star icon styling */
 
-        .action-menu-btn { position: relative; overflow: hidden; border: none; background: transparent; cursor: pointer; width: 36px; height: 36px; border-radius: var(--md-shape-full); display: flex; align-items: center; justify-content: center; color: var(--md-sys-color-on-surface-variant); }
+        .action-menu-btn { border: none; background: transparent; cursor: pointer; width: 36px; height: 36px; border-radius: var(--md-shape-full); display: flex; align-items: center; justify-content: center; color: var(--md-sys-color-on-surface-variant); }
         .action-menu-btn:hover { background-color: rgba(0,0,0,0.06); }
 
         /* 上下文菜单 */
         .context-menu { position: fixed; background-color: var(--md-sys-color-surface); border-radius: var(--md-shape-medium); padding: 8px 0; min-width: 180px; box-shadow: 0px 8px 24px rgba(0,0,0,0.15); z-index: 100; opacity: 0; transform: scale(0.9); transition: var(--md-transition); pointer-events: none; }
         .context-menu.show { opacity: 1; transform: scale(1); pointer-events: auto; }
-        .menu-item { position: relative; overflow: hidden; padding: 10px 16px; display: flex; align-items: center; gap: 12px; font-size: 14px; cursor: pointer; color: var(--md-sys-color-on-surface); }
+        .menu-item { padding: 10px 16px; display: flex; align-items: center; gap: 12px; font-size: 14px; cursor: pointer; color: var(--md-sys-color-on-surface); }
         .menu-item:hover { background-color: rgba(0,0,0,0.05); }
+        .menu-item .material-symbols-outlined { font-size: 20px; color: var(--md-sys-color-on-surface-variant); }
+        .menu-item.danger-item { color: var(--md-sys-color-error); }
+        .menu-item.danger-item .material-symbols-outlined { color: var(--md-sys-color-error); }
 
-        /* 对话框 */
+        /* 对话框通用样式 */
         .dialog-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: var(--md-transition); }
         .dialog-overlay.show { opacity: 1; pointer-events: auto; }
-        .dialog-card { background-color: var(--md-sys-color-surface); width: 90%; max-width: 400px; border-radius: 28px; padding: 24px; box-shadow: 0px 10px 30px rgba(0,0,0,0.2); transform: translateY(30px); transition: var(--md-transition); }
+        .dialog-card { background-color: var(--md-sys-color-surface); width: 90%; max-width: 400px; border-radius: 28px; padding: 24px; box-shadow: 0px 10px 30px rgba(0,0,0,0.2); transform: translateY(30px); transition: var(--md-transition); display: flex; flex-direction: column; }
         .dialog-overlay.show .dialog-card { transform: translateY(0); }
         .dialog-title { font-size: 24px; margin-bottom: 16px; font-weight: 400; color: var(--md-sys-color-on-surface); }
         
         .md-input { width: 100%; padding: 16px; border: 1px solid var(--md-sys-color-outline); border-radius: var(--md-shape-small); background: transparent; font-size: 16px; outline: none; color: var(--md-sys-color-on-surface); }
         .md-input:focus { border-color: var(--md-sys-color-primary); border-width: 2px; }
         .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
-        .btn-text { position: relative; overflow: hidden; background: transparent; border: none; padding: 10px 24px; border-radius: var(--md-shape-full); font-weight: 500; cursor: pointer; color: var(--md-sys-color-primary); }
+        .btn-text { border: none; background: transparent; padding: 10px 24px; border-radius: var(--md-shape-full); font-weight: 500; cursor: pointer; color: var(--md-sys-color-primary); font-size: 14px;}
         .btn-text:hover { background-color: rgba(245, 124, 0, 0.08); }
 
-        /* 涟漪效果 */
-        .ripple { position: absolute; border-radius: 50%; transform: scale(0); animation: ripple-anim 0.6s linear; background-color: rgba(0, 0, 0, 0.15); pointer-events: none; }
-        @keyframes ripple-anim { to { transform: scale(4); opacity: 0; } }
-
-        /* 移动端响应式与悬浮按钮 */
-        .fab-mobile { display: none; position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 16px; background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 90; align-items: center; justify-content: center; border: none; cursor: pointer; }
+        /* 移动对话框定制 UI (仿 iOS UI，但是用 MD3 风格) */
+        #move-dialog .dialog-card { max-width: 500px; padding: 0; border-radius: 16px; overflow: hidden; height: 80vh; max-height: 600px;}
+        .move-dialog-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid transparent; }
+        .move-dialog-header .btn-text { padding: 8px 16px; font-size: 16px; }
+        .move-dialog-header .btn-text.submit { font-weight: bold; }
         
-        @media (min-width: 900px) { .sidebar.closed { width: 0; padding: 12px 0; overflow: hidden; } }
+        .move-subtitle { text-align: center; font-size: 13px; color: var(--md-sys-color-on-surface-variant); padding: 0 24px 16px; }
+        
+        .move-item-preview { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 24px; font-weight: 500; font-size: 15px;}
+        .move-item-icon-box { width: 48px; height: 48px; border-radius: 12px; background-color: var(--md-sys-color-surface-container-high); display: flex; align-items: center; justify-content: center; }
+        
+        .move-tree-container { flex: 1; overflow-y: auto; border-top: 1px solid var(--md-sys-color-surface-container); }
+        .tree-node-row { display: flex; align-items: center; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--md-sys-color-surface-container); transition: var(--md-transition); }
+        .tree-node-row:hover { background-color: rgba(0,0,0,0.02); }
+        .tree-node-row.selected { background-color: var(--md-sys-color-surface-container-high); }
+        .tree-indent { width: 24px; height: 100%; flex-shrink: 0; }
+        .tree-icon { color: var(--md-sys-color-primary); margin-right: 12px; }
+        .tree-name { flex: 1; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tree-chevron { color: var(--md-sys-color-outline-variant); margin-left: 8px; font-size: 20px; transition: transform 0.2s; padding: 4px; border-radius: 50%;}
+        .tree-chevron:hover { background-color: rgba(0,0,0,0.05); }
+        .tree-chevron.expanded { transform: rotate(90deg); }
+
+        /* 移动端响应式 */
+        @media (min-width: 900px) { 
+            .sidebar.closed { width: 0; overflow: hidden; } 
+            .sidebar-header { display: none; }
+        }
         @media (max-width: 899px) {
             .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; z-index: 99; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
             .sidebar.open { left: 0; }
+            .sidebar-header { display: flex; } /* 移动端显示侧边栏Logo */
+            .top-bar-left .logo-text { display: none; } /* 移动端隐藏顶栏Logo */
+            #user-name { display: none; } /* 移动端隐藏用户名 */
             .drawer-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); z-index: 98; opacity: 0; pointer-events: none; transition: var(--md-transition); }
             .drawer-overlay.show { opacity: 1; pointer-events: auto; }
             .main-workspace { margin: 0 0 0 0 !important; border-radius: 0; }
-            .top-bar-center { display: none; }
-            .fab-mobile { display: flex; }
-            .list-header { grid-template-columns: 1fr 60px; }
-            .list-header div:nth-child(2), .list-header div:nth-child(3) { display: none; }
-            .file-row { grid-template-columns: 1fr 60px; }
+            .list-header { grid-template-columns: 1fr auto; padding: 0 16px; }
+            .list-header div:nth-child(2), .list-header div:nth-child(3) { display: none; } /* 隐藏日期和大小标题 */
+            .file-row { grid-template-columns: 1fr 60px; padding: 12px 16px;}
             .file-row .cell-info { display: none; }
-            .search-wrapper { width: 200px; }
+            .search-wrapper { width: 180px; padding: 8px 12px; }
+            .breadcrumb-container { padding: 12px 16px; }
         }
 
         .snackbar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background-color: #313033; color: #F4EFF4; padding: 14px 24px; border-radius: var(--md-shape-small); font-size: 14px; box-shadow: 0px 3px 5px rgba(0,0,0,0.2); opacity: 0; transition: var(--md-transition); z-index: 2000; }
@@ -175,7 +206,6 @@
                 <span class="material-symbols-outlined">menu</span>
             </button>
             <div class="logo-text">
-                <!-- 结合橙子与网盘的 SVG Logo -->
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="12" cy="12" r="10" fill="#F57C00"/>
                     <path d="M7 14c-1.66 0-3-1.34-3-3 0-1.31.84-2.41 2-2.83C6.42 6.36 8.08 5 10 5c2.11 0 3.92 1.45 4.7 3.41C15.81 8.16 16.86 8 18 8c2.21 0 4 1.79 4 4 0 2.21-1.79 4-4 4H7z" fill="white"/>
@@ -184,28 +214,12 @@
                 <span>iNet Drive</span>
             </div>
         </div>
-        
-        <div class="top-bar-center">
-            <button class="icon-btn ripple-btn" onclick="execUndo()" title="撤销 (Ctrl+Z)" id="btn-undo">
-                <span class="material-symbols-outlined">undo</span>
-            </button>
-            <button class="icon-btn ripple-btn" onclick="execRedo()" title="重做 (Ctrl+Y)" id="btn-redo">
-                <span class="material-symbols-outlined">redo</span>
-            </button>
-            <button class="center-action-btn ripple-btn" onclick="openUploadSelect()" title="上传文件">
-                <span class="material-symbols-outlined">upload</span>
-            </button>
-            <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(this)">
-            <button class="center-action-btn ripple-btn" onclick="openCreateFolderDialog()" title="新建文件夹">
-                <span class="material-symbols-outlined">create_new_folder</span>
-            </button>
-        </div>
 
         <div class="top-bar-right">
             <div class="search-container">
                 <div class="search-wrapper">
                     <span class="material-symbols-outlined">search</span>
-                    <input type="text" id="search-input" placeholder="搜索文件、格式或日期 (空格分词)..." oninput="handleAdvancedSearch()" onfocus="handleAdvancedSearch()">
+                    <input type="text" id="search-input" placeholder="搜索文件或格式 (空格分词)..." oninput="handleAdvancedSearch()" onfocus="handleAdvancedSearch()">
                     <span id="search-count"></span>
                 </div>
                 <div class="search-dropdown" id="search-dropdown"></div>
@@ -220,7 +234,7 @@
                     <div class="menu-item ripple-btn" onclick="window.open('https://user.chenyurong.qzz.io', '_blank')">
                         <span class="material-symbols-outlined">manage_accounts</span>管理我的账号
                     </div>
-                    <div class="menu-item ripple-btn" onclick="handleLogout()" style="color: var(--md-sys-color-error);">
+                    <div class="menu-item ripple-btn danger-item" onclick="handleLogout()">
                         <span class="material-symbols-outlined">logout</span>退出登录
                     </div>
                 </div>
@@ -232,18 +246,39 @@
         <div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
 
         <aside class="sidebar" id="app-drawer">
-            <div class="nav-item active ripple-btn">
-                <span class="material-symbols-outlined">folder_open</span>
-                <span>我的云盘</span>
+            <!-- 移动端侧边栏 Logo -->
+            <div class="sidebar-header">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px;">
+                    <circle cx="12" cy="12" r="10" fill="#F57C00"/>
+                    <path d="M7 14c-1.66 0-3-1.34-3-3 0-1.31.84-2.41 2-2.83C6.42 6.36 8.08 5 10 5c2.11 0 3.92 1.45 4.7 3.41C15.81 8.16 16.86 8 18 8c2.21 0 4 1.79 4 4 0 2.21-1.79 4-4 4H7z" fill="white"/>
+                    <path d="M11 9v5m-2-2h4" stroke="#F57C00" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span style="font-size: 20px; font-weight: 700; color: var(--md-sys-color-primary);">iNet Drive</span>
             </div>
-            <div class="nav-item ripple-btn">
-                <span class="material-symbols-outlined">star</span>
-                <span>已加星标</span>
+            <div class="nav-items-container">
+                <div class="nav-item active ripple-btn" onclick="switchView('drive')" id="nav-drive">
+                    <span class="material-symbols-outlined">folder_open</span>
+                    <span>我的云盘</span>
+                </div>
+                <div class="nav-item ripple-btn" onclick="switchView('starred')" id="nav-starred">
+                    <span class="material-symbols-outlined">star</span>
+                    <span>已加星标</span>
+                </div>
             </div>
         </aside>
 
         <main class="main-workspace">
-            <div class="breadcrumb-container" id="breadcrumbs"></div>
+            <div class="breadcrumb-container">
+                <div class="breadcrumb-text-area" id="breadcrumbs"></div>
+                <div class="history-actions">
+                    <button class="icon-btn ripple-btn" onclick="execUndo()" title="撤销 (Ctrl+Z)" id="btn-undo">
+                        <span class="material-symbols-outlined">undo</span>
+                    </button>
+                    <button class="icon-btn ripple-btn" onclick="execRedo()" title="重做 (Ctrl+Y)" id="btn-redo">
+                        <span class="material-symbols-outlined">redo</span>
+                    </button>
+                </div>
+            </div>
 
             <div class="progress-bar-container">
                 <div class="progress-bar-fill" id="upload-progress-fill"></div>
@@ -254,26 +289,23 @@
                     <div>名称</div>
                     <div>修改日期</div>
                     <div>大小</div>
-                    <div></div>
+                    <div class="list-header-actions">
+                        <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(this)">
+                        <button class="icon-btn ripple-btn" onclick="openUploadSelect()" title="上传文件">
+                            <span class="material-symbols-outlined">upload</span>
+                        </button>
+                        <button class="icon-btn ripple-btn" onclick="openCreateFolderDialog()" title="新建文件夹">
+                            <span class="material-symbols-outlined">create_new_folder</span>
+                        </button>
+                    </div>
                 </div>
-                <div id="file-rows-container"></div>
+                <div id="file-rows-container" style="flex:1;"></div>
             </div>
         </main>
-        
-        <!-- 移动端悬浮操作按钮 -->
-        <button class="fab-mobile ripple-btn" onclick="openUploadSelect()">
-            <span class="material-symbols-outlined">add</span>
-        </button>
     </div>
 
-    <!-- 文件右键/更多 菜单 -->
-    <div class="context-menu" id="action-menu">
-        <div class="menu-item ripple-btn" onclick="triggerPreview()"><span class="material-symbols-outlined">visibility</span>在线预览</div>
-        <div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>
-        <div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>
-        <div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>
-        <div class="menu-item ripple-btn" onclick="triggerDelete()" style="color: var(--md-sys-color-error);"><span class="material-symbols-outlined">delete</span>删除</div>
-    </div>
+    <!-- 动态上下文菜单，容器预留 -->
+    <div class="context-menu" id="action-menu"></div>
 
     <!-- 新建文件夹对话框 -->
     <div class="dialog-overlay" id="folder-dialog">
@@ -299,14 +331,25 @@
         </div>
     </div>
 
-    <!-- 移动对话框 (保持原逻辑精简) -->
+    <!-- 移动对话框 (严格仿照提供图片UI) -->
     <div class="dialog-overlay" id="move-dialog">
         <div class="dialog-card">
-            <div class="dialog-title">移动项目</div>
-            <div id="folder-tree-box" style="max-height:200px; overflow-y:auto; border:1px solid var(--md-sys-color-outline); border-radius:8px; padding:8px;"></div>
-            <div class="dialog-actions">
-                <button class="btn-text ripple-btn" onclick="closeDialog('move-dialog')">取消</button>
-                <button class="btn-text ripple-btn" onclick="triggerMoveFile()">移动</button>
+            <div class="move-dialog-header">
+                <button class="btn-text ripple-btn" onclick="closeDialog('move-dialog')">Cancel</button>
+                <button class="btn-text ripple-btn submit" onclick="triggerMoveFile()">Move</button>
+            </div>
+            
+            <div class="move-subtitle" id="move-subtitle-text">Item will be moved to "iCloud Drive"</div>
+            
+            <div class="move-item-preview">
+                <div class="move-item-icon-box">
+                    <span class="material-symbols-outlined" id="move-preview-icon" style="color: #9C27B0">description</span>
+                </div>
+                <span id="move-preview-name">暑假作业</span>
+            </div>
+
+            <div class="move-tree-container" id="move-tree-container">
+                <!-- Tree generated via JS -->
             </div>
         </div>
     </div>
@@ -318,20 +361,25 @@
         const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
         let currentPath = "";
+        let currentView = "drive"; // "drive" or "starred"
         let rawFilesData = [];
-        let activeFocusedItem = null;
-        let targetMoveFolder = "";
+        let activeFocusedItem = null; // { key, isFolder }
         
-        // 多选及快捷键状态管理
         let selectedKeys = new Set();
         let lastSelectedIndex = -1;
         let currentRenderedItems = []; 
         
-        // 撤销/重做 历史栈
         let undoStack = [];
         let redoStack = [];
 
-        // --- 核心网络与鉴权 ---
+        // 从本地存储加载星标数据 (Mock API 星标功能)
+        let starredKeys = new Set(JSON.parse(localStorage.getItem('inet_starred_keys') || '[]'));
+
+        // Move dialog state
+        let folderTreeData = {}; 
+        let expandedFolders = new Set([""]); // root is always expanded
+        let targetMoveFolder = "";
+
         async function fetchAPI(endpoint, options = {}) {
             const token = localStorage.getItem("auth_token") || "";
             const headers = { ...(options.headers || {}), "Authorization": `Bearer ${token}` };
@@ -360,7 +408,6 @@
                     const avatarEl = document.getElementById("user-avatar-text");
                     if (usernameEl && result.data.nickname) usernameEl.innerText = result.data.nickname;
                     if (avatarEl) {
-                        // 真实头像渲染
                         if(result.data.avatar) {
                             avatarEl.innerHTML = `<img src="${result.data.avatar}" alt="avatar" crossorigin="anonymous">`;
                         } else if(result.data.nickname) {
@@ -390,11 +437,10 @@
             fetchGlobalUserInfo();
         });
 
-        // --- 核心业务命令模式 (实现真实撤销/重做) ---
-        // 为了实现"自打开网站以后的任意更改可撤销"，保存对前端 rawFilesData 的深拷贝作为快照
+        // 撤销/重做
         function saveHistorySnapshot() {
             undoStack.push(JSON.stringify(rawFilesData));
-            redoStack = []; // 清空重做栈
+            redoStack = []; 
         }
         
         async function execUndo() {
@@ -413,20 +459,18 @@
             renderWorkspace();
         }
 
-        // 统一包裹 API 变更，捕获状态
         async function runMutation(apiCallFunc, successMsg) {
             saveHistorySnapshot();
             try {
                 await apiCallFunc();
                 showSnackbar(successMsg);
-                await fetchFileList(); // 重新同步远程
+                await fetchFileList(); 
             } catch (e) {
-                undoStack.pop(); // 回退快照
+                undoStack.pop(); 
                 if (e.message !== "Unauthorized") showSnackbar("操作失败: " + e.message);
             }
         }
 
-        // --- 抽屉与交互控制 ---
         function toggleDrawer() {
             const drawer = document.getElementById("app-drawer");
             const overlay = document.getElementById("drawer-overlay");
@@ -434,26 +478,58 @@
             else { drawer.classList.toggle("open"); overlay.classList.toggle("show"); }
         }
 
-        function toggleUserMenu(e) {
-            e.stopPropagation();
-            document.getElementById("user-menu").classList.toggle("show");
-        }
-        
-        function handleLogout() {
-            localStorage.removeItem("auth_token");
-            redirectToLogin();
+        function toggleUserMenu(e) { e.stopPropagation(); document.getElementById("user-menu").classList.toggle("show"); }
+        function handleLogout() { localStorage.removeItem("auth_token"); redirectToLogin(); }
+
+        function switchView(view) {
+            currentView = view;
+            document.getElementById("nav-drive").classList.remove("active");
+            document.getElementById("nav-starred").classList.remove("active");
+            document.getElementById("nav-" + view).classList.add("active");
+            selectedKeys.clear();
+            if(window.innerWidth < 900) toggleDrawer(); // close drawer on mobile after select
+            renderWorkspace();
         }
 
-        // --- 视图渲染与多选逻辑 ---
         async function fetchFileList() {
             try {
                 const res = await fetchAPI("/list");
                 const data = await res.json();
                 rawFilesData = data.files || [];
+                
+                // Cleanup starred keys that no longer exist
+                const allKeys = new Set(rawFilesData.map(f => f.key));
+                let starredChanged = false;
+                starredKeys.forEach(k => {
+                    // Check if file or folder exists (folder check involves trailing slash)
+                    if(!allKeys.has(k) && !allKeys.has(k+'/')) {
+                        starredKeys.delete(k);
+                        starredChanged = true;
+                    }
+                });
+                if(starredChanged) saveStarredKeys();
+
                 renderWorkspace();
             } catch (err) {
                 if (err.message !== "Unauthorized") showSnackbar("获取文件列表失败");
             }
+        }
+
+        function saveStarredKeys() {
+            localStorage.setItem('inet_starred_keys', JSON.stringify([...starredKeys]));
+        }
+
+        function toggleStar(key) {
+            if (starredKeys.has(key)) {
+                starredKeys.delete(key);
+                showSnackbar("已取消星标");
+            } else {
+                starredKeys.add(key);
+                showSnackbar("已添加星标");
+            }
+            saveStarredKeys();
+            renderWorkspace();
+            closeActionMenu();
         }
 
         function renderWorkspace() {
@@ -462,6 +538,12 @@
             container.innerHTML = "";
             currentRenderedItems = [];
 
+            if (currentView === "starred") {
+                renderStarredView(container);
+                return;
+            }
+
+            // Normal Drive View
             const foldersSet = new Set();
             const filesInCurrent = [];
 
@@ -477,11 +559,11 @@
             });
 
             let renderIndex = 0;
-
             foldersSet.forEach(folderName => {
                 const fullKey = currentPath + folderName + "/";
                 const isSelected = selectedKeys.has(fullKey);
-                const row = createRowNode(folderName, "-", "文件夹", "folder", fullKey, true, renderIndex, isSelected);
+                const isStarred = starredKeys.has(fullKey);
+                const row = createRowNode(folderName, "-", "文件夹", "folder", fullKey, true, renderIndex, isSelected, isStarred, false);
                 currentRenderedItems.push({ key: fullKey, isFolder: true, index: renderIndex });
                 container.appendChild(row);
                 renderIndex++;
@@ -490,29 +572,81 @@
             filesInCurrent.forEach(file => {
                 const displayName = file.key.substring(currentPath.length);
                 const isSelected = selectedKeys.has(file.key);
-                const row = createRowNode(displayName, file.uploaded ? new Date(file.uploaded).toLocaleDateString() : "-", formatBytes(file.size), "description", file.key, false, renderIndex, isSelected);
+                const isStarred = starredKeys.has(file.key);
+                const dateStr = file.uploaded ? new Date(file.uploaded).toLocaleDateString() : "-";
+                const row = createRowNode(displayName, dateStr, formatBytes(file.size), "description", file.key, false, renderIndex, isSelected, isStarred, false);
                 currentRenderedItems.push({ key: file.key, isFolder: false, index: renderIndex });
                 container.appendChild(row);
                 renderIndex++;
             });
 
             if (currentRenderedItems.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">此文件夹为空，拖拽或点击上方图标上传</div>`;
+                container.innerHTML = `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">此文件夹为空</div>`;
             }
         }
 
-        function createRowNode(name, date, size, icon, key, isFolder, index, isSelected) {
+        function renderStarredView(container) {
+            let renderIndex = 0;
+            const targetFiles = rawFilesData.filter(f => starredKeys.has(f.key) || starredKeys.has(f.key+'/'));
+            
+            // To properly render folders and files that are starred
+            const uniqueStarredKeysRendered = new Set();
+
+            starredKeys.forEach(sKey => {
+                const isFolder = sKey.endsWith('/');
+                const pureKey = isFolder ? sKey.substring(0, sKey.length - 1) : sKey;
+                const match = rawFilesData.find(f => f.key === sKey || f.key === pureKey);
+                if(!match && isFolder) {
+                    // It's a folder containing items, we assume it exists if it's in starred.
+                    // But to be safe, check if any rawFile starts with this folder
+                    if(rawFilesData.some(f => f.key.startsWith(sKey))) {
+                        const name = pureKey.split('/').pop();
+                        const isSelected = selectedKeys.has(sKey);
+                        const row = createRowNode(name, "-", "文件夹", "folder", sKey, true, renderIndex, isSelected, true, true);
+                        currentRenderedItems.push({ key: sKey, isFolder: true, index: renderIndex });
+                        container.appendChild(row);
+                        renderIndex++;
+                        uniqueStarredKeysRendered.add(sKey);
+                    }
+                } else if (match && !uniqueStarredKeysRendered.has(match.key)) {
+                    const isF = match.key.endsWith('/');
+                    const name = isF ? match.key.split('/').filter(Boolean).pop() : match.key.split('/').pop();
+                    const isSelected = selectedKeys.has(match.key);
+                    const dateStr = match.uploaded ? new Date(match.uploaded).toLocaleDateString() : "-";
+                    const row = createRowNode(name, dateStr, isF ? "文件夹" : formatBytes(match.size), isF ? "folder" : "description", match.key, isF, renderIndex, isSelected, true, true);
+                    currentRenderedItems.push({ key: match.key, isFolder: isF, index: renderIndex });
+                    container.appendChild(row);
+                    renderIndex++;
+                    uniqueStarredKeysRendered.add(match.key);
+                }
+            });
+
+            if (currentRenderedItems.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">暂无星标文件</div>`;
+            }
+        }
+
+        function createRowNode(name, date, size, icon, key, isFolder, index, isSelected, isStarred, showFullPath) {
             const row = document.createElement("div");
             row.className = `file-row ripple-btn ${isSelected ? 'selected' : ''}`;
-            row.draggable = true; // 启用拖拽
+            row.draggable = true; 
+            
+            const displayPath = showFullPath ? `<div style="font-size:11px; color:var(--md-sys-color-outline); margin-top:2px;">${key}</div>` : '';
+            const starHtml = isStarred ? `<span class="material-symbols-outlined icon-star">star</span>` : '';
+
             row.innerHTML = `
-                <div class="cell-name"><span class="material-symbols-outlined cell-icon ${icon === 'folder' ? 'icon-folder' : 'icon-file'}">${icon}</span><span>${name}</span></div>
+                <div class="cell-name" style="pointer-events: none;">
+                    <span class="material-symbols-outlined cell-icon ${icon === 'folder' ? 'icon-folder' : 'icon-file'}">${icon}</span>
+                    <div style="display:flex; flex-direction:column; max-width:80%;">
+                        <div style="display:flex; align-items:center;"><span>${name}</span>${starHtml}</div>
+                        ${displayPath}
+                    </div>
+                </div>
                 <div class="cell-info">${date}</div>
                 <div class="cell-info">${size}</div>
-                <div><button class="action-menu-btn ripple-btn" onclick="openActionMenu(event, '${key}', ${isFolder})"><span class="material-symbols-outlined">more_vert</span></button></div>
+                <div><button class="action-menu-btn ripple-btn" onclick="openContextMenu(event, '${key}', ${isFolder})"><span class="material-symbols-outlined">more_vert</span></button></div>
             `;
             
-            // 多选事件
             row.addEventListener("click", (e) => {
                 if (e.target.closest('.action-menu-btn')) return;
                 
@@ -525,12 +659,16 @@
                     const start = Math.min(lastSelectedIndex, index);
                     const end = Math.max(lastSelectedIndex, index);
                     selectedKeys.clear();
-                    for(let i = start; i <= end; i++) {
-                        selectedKeys.add(currentRenderedItems[i].key);
-                    }
+                    for(let i = start; i <= end; i++) selectedKeys.add(currentRenderedItems[i].key);
                     renderWorkspace();
                 } else {
                     if(isFolder) {
+                        if (currentView === "starred") {
+                            // jump to drive view folder
+                            currentView = "drive";
+                            document.getElementById("nav-starred").classList.remove("active");
+                            document.getElementById("nav-drive").classList.add("active");
+                        }
                         selectedKeys.clear();
                         currentPath = key;
                         renderWorkspace();
@@ -543,7 +681,11 @@
                 }
             });
 
-            // 拖拽事件 (文件/文件夹皆可拖动，且可拖入文件夹)
+            row.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                openContextMenu(e, key, isFolder);
+            });
+
             row.addEventListener("dragstart", (e) => {
                 e.dataTransfer.setData("application/json", JSON.stringify({ key, isFolder }));
                 e.dataTransfer.effectAllowed = "move";
@@ -568,6 +710,11 @@
 
         function renderBreadcrumbs() {
             const box = document.getElementById("breadcrumbs");
+            if (currentView === "starred") {
+                box.innerHTML = `<span class="crumb ripple-btn">已加星标</span>`;
+                return;
+            }
+
             box.innerHTML = `<span class="crumb ripple-btn" onclick="jumpToPath('')">我的云盘</span>`;
             if (!currentPath) return;
             const parts = currentPath.split("/").filter(p => p);
@@ -579,7 +726,7 @@
         }
         function jumpToPath(path) { currentPath = path; selectedKeys.clear(); renderWorkspace(); }
 
-        // --- 操作逻辑与 API ---
+        // 文件上传/新建
         function openUploadSelect() { document.getElementById("file-input").click(); }
         async function handleFileSelect(input) {
             let file = input.files[0];
@@ -596,7 +743,7 @@
             await runMutation(async () => {
                 await fetchAPI("/upload", { method: "POST", body: data });
                 progFill.style.width = "100%";
-            }, `上传 ${file.name} 成功`);
+            }, `上传成功`);
             
             setTimeout(() => { progFill.style.display = "none"; progFill.style.width = "0%"; }, 500);
             input.value = "";
@@ -616,87 +763,272 @@
             closeDialog('folder-dialog');
         }
 
-        // 新增：在线预览 / 重命名
-        function triggerPreview() {
-            showSnackbar("准备预览: " + activeFocusedItem.key);
-            // 实际可结合后端生成预览URL在新标签页打开
+        // 动态右键菜单
+        function openContextMenu(event, key, isFolder) {
+            event.stopPropagation();
+            activeFocusedItem = { key, isFolder };
+            selectedKeys.add(key); // Auto select on right click
+            renderWorkspace();
+
+            const menu = document.getElementById("action-menu");
+            menu.innerHTML = ""; // clear previous
+
+            const starText = starredKeys.has(key) ? "取消星标" : "添加星标";
+            const starIcon = starredKeys.has(key) ? "star" : "star_border";
+
+            if (isFolder) {
+                // Folder Options: 打开文件夹, 重命名, 移动, 删除, 添加星标
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="jumpToPath('${key}'); closeActionMenu();"><span class="material-symbols-outlined">folder_open</span>打开文件夹</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="toggleStar('${key}')"><span class="material-symbols-outlined">${starIcon}</span>${starText}</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
+            } else {
+                // File Options: 在线预览(图/视频), 下载文件, 添加星标, 重命名, 移动, 删除
+                const ext = key.split('.').pop().toLowerCase();
+                const previewable = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'pdf'].includes(ext);
+                
+                if (previewable) {
+                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerPreview()"><span class="material-symbols-outlined">visibility</span>在线预览</div>`;
+                }
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="toggleStar('${key}')"><span class="material-symbols-outlined">${starIcon}</span>${starText}</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
+            }
+
+            menu.classList.add("show");
+            
+            let topPos = event.clientY;
+            if(topPos + menu.offsetHeight > window.innerHeight) topPos = window.innerHeight - menu.offsetHeight - 10;
+            menu.style.top = `${topPos}px`;
+            
+            let leftPos = event.clientX;
+            if (leftPos + menu.offsetWidth > window.innerWidth) leftPos = window.innerWidth - menu.offsetWidth - 10;
+            menu.style.left = `${leftPos}px`;
+        }
+        function closeActionMenu() { document.getElementById("action-menu").classList.remove("show"); }
+
+        // 下载与预览
+        async function triggerPreview() {
+            try {
+                const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
+                const data = await res.json();
+                if (!data.success || !data.url) throw new Error("获取地址失败");
+                window.open(data.url, '_blank'); // Open in new tab
+            } catch (e) {
+                showSnackbar("预览失败");
+            }
             closeActionMenu();
         }
 
+        async function triggerDownload() {
+            try {
+                const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
+                const data = await res.json();
+                if (!data.success || !data.url) throw new Error("获取地址失败");
+                
+                // Force Download approach (Fetching blob locally to ensure download rather than preview)
+                showSnackbar("正在下载...");
+                const filename = activeFocusedItem.key.split('/').pop();
+                try {
+                    const response = await fetch(data.url);
+                    const blob = await response.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = blobUrl;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(blobUrl);
+                } catch(e) {
+                    // Fallback to open if CORS blocks fetch
+                    const a = document.createElement("a");
+                    a.href = data.url;
+                    a.download = filename;
+                    a.target = "_blank";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                }
+
+            } catch (e) {
+                showSnackbar("下载失败");
+            }
+            closeActionMenu();
+        }
+
+        // 重命名
         function openRenameDialog() {
             closeActionMenu();
             const name = activeFocusedItem.key.split('/').filter(Boolean).pop();
             document.getElementById("rename-input").value = name;
             openDialog("rename-dialog");
         }
-
         async function triggerRename() {
             const newName = document.getElementById("rename-input").value.trim();
             if(!newName) return;
-            
             const oldKey = activeFocusedItem.key;
-            const dirPath = oldKey.substring(0, oldKey.lastIndexOf(activeFocusedItem.isFolder ? "/" : "") - (activeFocusedItem.isFolder ? oldKey.split('/').filter(Boolean).pop().length : oldKey.split('/').pop().length));
+            let dirPath = "";
+            if (activeFocusedItem.isFolder) {
+                const parts = oldKey.split('/').filter(Boolean);
+                parts.pop();
+                dirPath = parts.length > 0 ? parts.join('/') + '/' : '';
+            } else {
+                dirPath = oldKey.substring(0, oldKey.lastIndexOf("/") + 1);
+            }
             
-            let newKey = currentPath + newName + (activeFocusedItem.isFolder ? "/" : "");
+            let newKey = dirPath + newName + (activeFocusedItem.isFolder ? "/" : "");
             
+            // update starred if necessary
+            if(starredKeys.has(oldKey)) {
+                starredKeys.delete(oldKey);
+                starredKeys.add(newKey);
+                saveStarredKeys();
+            }
+
             await executeMoveAPI(oldKey, newKey);
             closeDialog("rename-dialog");
         }
 
-        async function triggerDownload() {
-            if (activeFocusedItem.isFolder) { showSnackbar("暂不支持下载整个文件夹"); return; }
-            try {
-                const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
-                const data = await res.json();
-                if (!data.success || !data.url) throw new Error("获取地址失败");
-                window.open(data.url, '_blank');
-                showSnackbar("下载开始");
-            } catch (e) {
-                if (e.message !== "Unauthorized") showSnackbar("下载失败");
-            }
-            closeActionMenu();
-        }
-
         async function triggerDelete() {
             const targetKey = activeFocusedItem.key;
+            if(starredKeys.has(targetKey)) {
+                starredKeys.delete(targetKey);
+                saveStarredKeys();
+            }
             await runMutation(async () => {
                 await fetchAPI(`/delete?key=${encodeURIComponent(targetKey)}`, { method: "DELETE" });
             }, "删除成功");
             closeActionMenu();
         }
 
-        function openMoveDialog() {
-            closeActionMenu();
-            const box = document.getElementById("folder-tree-box");
-            box.innerHTML = `<div class="tree-item selected ripple-btn" style="padding:10px; cursor:pointer;" onclick="selectTreeFolder('', this)"><span class="material-symbols-outlined" style="vertical-align:middle;margin-right:8px;">folder</span>我的云盘</div>`;
-            const folderPaths = new Set();
+        // --- 移动文件 (全新苹果风+MD3树形UI) ---
+        function parseFolderStructure() {
+            const tree = { name: "我的云盘", key: "", children: {} };
             rawFilesData.forEach(item => {
-                const idx = item.key.lastIndexOf("/");
-                if (idx !== -1) folderPaths.add(item.key.substring(0, idx + 1));
+                const key = item.key;
+                const isFolder = key.endsWith('/');
+                if(isFolder) {
+                    const parts = key.split('/').filter(Boolean);
+                    let currentLevel = tree.children;
+                    let currentPathBuild = "";
+                    parts.forEach((part, i) => {
+                        currentPathBuild += part + '/';
+                        if(!currentLevel[part]) {
+                            currentLevel[part] = { name: part, key: currentPathBuild, children: {} };
+                        }
+                        currentLevel = currentLevel[part].children;
+                    });
+                }
             });
-            folderPaths.forEach(path => {
-                if (activeFocusedItem.isFolder && path.startsWith(activeFocusedItem.key)) return;
-                const row = document.createElement("div");
-                row.className = "tree-item ripple-btn";
-                row.style.cssText = "padding:10px; cursor:pointer; margin-top:4px; border-radius:8px;";
-                row.innerHTML = `<span class="material-symbols-outlined" style="vertical-align:middle;margin-right:8px;">folder</span>${path}`;
-                row.onclick = () => { selectTreeFolder(path, row); };
-                box.appendChild(row);
-            });
-            targetMoveFolder = "";
-            openDialog('move-dialog');
+            return tree;
         }
 
-        function selectTreeFolder(path, el) { 
-            targetMoveFolder = path; 
-            document.querySelectorAll('#folder-tree-box .tree-item').forEach(n => { n.style.backgroundColor=''; n.style.color=''; n.classList.remove('selected'); });
-            el.style.backgroundColor = "var(--md-sys-color-primary-container)";
-            el.style.color = "var(--md-sys-color-on-primary-container)";
+        function renderTreeUI(node, depth, container) {
+            // Cannot move into itself or its children
+            if (activeFocusedItem.isFolder && node.key.startsWith(activeFocusedItem.key)) return;
+
+            const isExpanded = expandedFolders.has(node.key);
+            const hasChildren = Object.keys(node.children).length > 0;
+            const isSelected = targetMoveFolder === node.key;
+
+            const row = document.createElement("div");
+            row.className = `tree-node-row ripple-btn ${isSelected ? 'selected' : ''}`;
+            
+            // Indentation
+            const indentSpace = document.createElement("div");
+            indentSpace.className = "tree-indent";
+            indentSpace.style.width = `${depth * 24 + 16}px`;
+            
+            // Icon
+            const icon = document.createElement("span");
+            icon.className = "material-symbols-outlined tree-icon";
+            icon.innerText = "folder";
+            
+            // Name
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "tree-name";
+            nameSpan.innerText = node.name;
+
+            row.appendChild(indentSpace);
+            row.appendChild(icon);
+            row.appendChild(nameSpan);
+
+            // Chevron
+            if(hasChildren) {
+                const chevron = document.createElement("span");
+                chevron.className = `material-symbols-outlined tree-chevron ${isExpanded ? 'expanded' : ''}`;
+                chevron.innerText = "chevron_right";
+                
+                // Clicking Chevron toggles expand/collapse
+                chevron.onclick = (e) => {
+                    e.stopPropagation();
+                    if(isExpanded) expandedFolders.delete(node.key);
+                    else expandedFolders.add(node.key);
+                    refreshTreeUI();
+                };
+                row.appendChild(chevron);
+            }
+
+            // Clicking row selects target
+            row.onclick = () => {
+                targetMoveFolder = node.key;
+                updateMoveSubtitle();
+                refreshTreeUI();
+            };
+
+            container.appendChild(row);
+
+            if(isExpanded && hasChildren) {
+                Object.values(node.children).forEach(childNode => {
+                    renderTreeUI(childNode, depth + 1, container);
+                });
+            }
+        }
+
+        function refreshTreeUI() {
+            const container = document.getElementById("move-tree-container");
+            container.innerHTML = "";
+            renderTreeUI(folderTreeData, 0, container);
+        }
+
+        function updateMoveSubtitle() {
+            const sub = document.getElementById("move-subtitle-text");
+            const targetName = targetMoveFolder === "" ? "我的云盘" : targetMoveFolder.split('/').filter(Boolean).pop();
+            sub.innerText = `Item will be moved to "${targetName}"`;
+        }
+
+        function openMoveDialog() {
+            closeActionMenu();
+            folderTreeData = parseFolderStructure();
+            targetMoveFolder = "";
+            expandedFolders = new Set([""]); // Default open root
+
+            // Set Preview
+            const isF = activeFocusedItem.isFolder;
+            const name = isF ? activeFocusedItem.key.split('/').filter(Boolean).pop() : activeFocusedItem.key.split('/').pop();
+            document.getElementById("move-preview-icon").innerText = isF ? "folder" : "description";
+            document.getElementById("move-preview-icon").style.color = isF ? "var(--md-sys-color-primary)" : "#9C27B0";
+            document.getElementById("move-preview-name").innerText = name;
+            
+            updateMoveSubtitle();
+            refreshTreeUI();
+            openDialog('move-dialog');
         }
 
         async function triggerMoveFile() {
             const oldKey = activeFocusedItem.key;
             let newKey = targetMoveFolder + (activeFocusedItem.isFolder ? oldKey.split('/').filter(Boolean).pop() + "/" : oldKey.substring(oldKey.lastIndexOf("/") + 1));
+            
+            if(starredKeys.has(oldKey)) {
+                starredKeys.delete(oldKey);
+                starredKeys.add(newKey);
+                saveStarredKeys();
+            }
+
             await executeMoveAPI(oldKey, newKey);
             closeDialog('move-dialog');
         }
@@ -704,10 +1036,10 @@
         async function executeMoveAPI(oldKey, newKey) {
             await runMutation(async () => {
                 await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey, newKey }) });
-            }, "移动/重命名成功");
+            }, "操作成功");
         }
 
-        // --- 高级多词搜索 ---
+        // 高级搜索 (移除日期，保留名称和格式分词)
         function handleAdvancedSearch() {
             const queryStr = document.getElementById("search-input").value.toLowerCase().trim();
             const dropdown = document.getElementById("search-dropdown");
@@ -719,17 +1051,13 @@
                 countEl.innerText = "";
                 return; 
             }
-
-            // 空格分词
             const queries = queryStr.split(/\s+/);
             
             const results = rawFilesData.filter(file => {
                 const name = file.key.toLowerCase();
                 const ext = name.split('.').pop();
-                const dateStr = file.uploaded ? new Date(file.uploaded).toLocaleDateString() : "";
-                
-                // 必须包含所有关键词 (匹配名称、格式或日期)
-                return queries.every(q => name.includes(q) || ext.includes(q) || dateStr.includes(q));
+                // 必须包含所有关键词 (只匹配名称或格式)
+                return queries.every(q => name.includes(q) || ext.includes(q));
             });
 
             countEl.innerText = `共 ${results.length} 项`;
@@ -747,10 +1075,11 @@
                     dropdown.classList.remove("show");
                     document.getElementById("search-input").value = "";
                     countEl.innerText = "";
-                    // 定位并跳转到该文件所在目录
                     const targetFolder = isFolder ? file.key : file.key.substring(0, file.key.lastIndexOf("/") + 1);
+                    currentView = 'drive';
+                    document.getElementById("nav-starred").classList.remove("active");
+                    document.getElementById("nav-drive").classList.add("active");
                     jumpToPath(targetFolder);
-                    // 高亮该项 (简易实现)
                     setTimeout(() => {
                         selectedKeys.clear();
                         selectedKeys.add(file.key);
@@ -762,23 +1091,6 @@
         }
 
         // --- 全局交互与特效 ---
-        function openActionMenu(event, key, isFolder) {
-            event.stopPropagation();
-            activeFocusedItem = { key, isFolder };
-            const menu = document.getElementById("action-menu");
-            menu.classList.add("show");
-            
-            // 确保菜单不超出屏幕底边缘
-            let topPos = event.clientY;
-            if(topPos + 220 > window.innerHeight) topPos -= 220;
-            menu.style.top = `${topPos}px`;
-            
-            let leftPos = event.clientX - 160;
-            if (leftPos < 0) leftPos = event.clientX;
-            menu.style.left = `${leftPos}px`;
-        }
-
-        function closeActionMenu() { document.getElementById("action-menu").classList.remove("show"); }
         function openDialog(id) { document.getElementById(id).classList.add("show"); }
         function closeDialog(id) { document.getElementById(id).classList.remove("show"); }
         function showSnackbar(msg) {
@@ -788,24 +1100,25 @@
             setTimeout(() => { bar.classList.remove("show"); }, 3000);
         }
 
-        // 添加涟漪特效逻辑
-        function createRipple(event) {
-            const button = event.currentTarget;
+        function createRipple(event, button) {
             const circle = document.createElement("span");
             const diameter = Math.max(button.clientWidth, button.clientHeight);
             const radius = diameter / 2;
             const rect = button.getBoundingClientRect();
+            
             circle.style.width = circle.style.height = `${diameter}px`;
             circle.style.left = `${event.clientX - rect.left - radius}px`;
             circle.style.top = `${event.clientY - rect.top - radius}px`;
             circle.classList.add("ripple");
-            const ripple = button.getElementsByClassName("ripple")[0];
-            if (ripple) ripple.remove();
+            
+            const existing = button.querySelector('.ripple');
+            if(existing) existing.remove();
+            
             button.appendChild(circle);
+            setTimeout(() => circle.remove(), 600);
         }
 
         function setupGlobalListeners() {
-            // 事件委托处理涟漪
             document.addEventListener("mousedown", function(e) {
                 const rippleBtn = e.target.closest('.ripple-btn');
                 if(rippleBtn) createRipple(e, rippleBtn);
@@ -826,7 +1139,6 @@
                 }
             });
 
-            // 监听键盘快捷键 (Ctrl+Z, Ctrl+Y, Alt+A)
             document.addEventListener("keydown", (e) => {
                 if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); execUndo(); }
                 if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); execRedo(); }
