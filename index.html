@@ -1601,18 +1601,21 @@
 
             for (let attempt = 0; attempt < MAX_CHUNK_RETRIES; attempt++) {
                 try {
-                    const formData = new FormData();
-                    formData.append("file", chunkBlob, file.name + ".part" + chunkIndex);
-                    formData.append("key", targetKey);
-                    formData.append("chunkIndex", chunkIndex);
-                    formData.append("totalChunks", totalChunks);
-                    formData.append("uploadId", uploadId);
-
                     const token = localStorage.getItem("auth_token") || "";
-                    const response = await fetch(API + "/upload/chunk", {
+
+                    // ★ 核心修复：通过 URL 传参，抛弃 FormData
+                    const queryUrl = new URL(API + "/upload/chunk");
+                    queryUrl.searchParams.append("key", targetKey);
+                    queryUrl.searchParams.append("chunkIndex", chunkIndex);
+                    queryUrl.searchParams.append("uploadId", uploadId);
+
+                    const response = await fetch(queryUrl.toString(), {
                         method: "POST",
-                        headers: { "Authorization": `Bearer ${token}` },
-                        body: formData,
+                        headers: {
+                            "Authorization": `Bearer ${token}`,
+                            "Content-Type": "application/octet-stream"
+                        },
+                        body: chunkBlob, // 直接发送原始二进制流
                         signal: signal,
                     });
 
@@ -1629,15 +1632,12 @@
                     return response;
                 } catch (err) {
                     lastError = err;
-                    // 如果是取消操作或认证错误，不重试直接抛出
                     if (err.name === 'AbortError' || err.message === "Unauthorized") {
                         throw err;
                     }
                     if (attempt < MAX_CHUNK_RETRIES - 1) {
-                        // 指数退避：2s, 4s, 8s...
                         const delay = 1000 * Math.pow(2, attempt);
-                        console.warn(`分片 ${chunkIndex} 上传失败，${delay}ms 后重试 (${attempt + 1}/${MAX_CHUNK_RETRIES})`,
-                            err);
+                        console.warn(`分片 ${chunkIndex} 上传失败，${delay}ms 后重试`, err);
                         await new Promise(r => setTimeout(r, delay));
                     }
                 }
@@ -1715,14 +1715,14 @@
          * 合并分片（调用后端 merge 接口）
          */
         async function uploadFileInChunks(file, targetKey) {
-            isUploading = true; // ★ 修复：加锁，防止多重点击
+            isUploading = true;
             const abortController = new AbortController();
             activeUploadAborter = abortController;
 
             const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+            let currentUploadId = null; // ★ 提升作用域，供失败时取消使用
 
             try {
-                // 1. 初始化 multipart upload，并发送真实的 contentType
                 const initRes = await fetchAPI("/upload/init", {
                     method: "POST",
                     body: JSON.stringify({
@@ -1730,47 +1730,44 @@
                         contentType: file.type || "application/octet-stream"
                     })
                 });
-                const { uploadId } = await initRes.json();
+                const initData = await initRes.json();
+                currentUploadId = initData.uploadId; // 保存 uploadId
 
-                // 2. 准备所有分片
                 const chunks = [];
                 for (let i = 0; i < totalChunks; i++) {
                     chunks.push(file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE));
                 }
 
-                // 3. ★ 核心修复：调用并发上传并拿到结果
                 const parts = await uploadAllChunksConcurrently(
-                    file, chunks, totalChunks, uploadId, targetKey, abortController.signal,
+                    file, chunks, totalChunks, currentUploadId, targetKey, abortController.signal,
                     (completed, total) => updateUploadProgress(completed, total)
                 );
 
-                // 4. 合并分片
                 await fetchAPI("/upload/merge", {
                     method: "POST",
-                    body: JSON.stringify({ key: targetKey, uploadId, parts })
+                    body: JSON.stringify({ key: targetKey, uploadId: currentUploadId, parts })
                 });
 
                 showSnackbar("上传成功");
                 await fetchFileList();
             } catch (err) {
-                // 拦截如果是主动取消则友好提示
                 if (err.name === 'AbortError') {
                     showSnackbar("上传已取消");
                 } else {
                     showSnackbar("上传失败: " + err.message);
                 }
 
-                // 失败时尝试通知后端 abort
-                if (activeUploadAborter) {
+                // ★ 核心修复：使用 currentUploadId 取消上传，解决 400 Bad Request
+                if (currentUploadId) {
                     try {
                         await fetchAPI("/upload/abort", {
                             method: "POST",
-                            body: JSON.stringify({ key: targetKey, uploadId: activeUploadAborter.uploadId })
+                            body: JSON.stringify({ key: targetKey, uploadId: currentUploadId })
                         });
-                    } catch (e) { }
+                    } catch (e) { console.error("清理分片失败", e); }
                 }
             } finally {
-                isUploading = false; // ★ 修复：解锁
+                isUploading = false;
                 activeUploadAborter = null;
                 hideUploadProgress();
             }
