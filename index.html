@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iNet Drive</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
 
     <style>
         :root {
@@ -13,7 +16,7 @@
             --md-sys-color-surface: #FFFFFF;
             --md-sys-color-surface-container: #FFEDE4;
             --md-sys-color-surface-container-high: #FFDBC7;
-            --md-sys-color-primary: #F57C00; 
+            --md-sys-color-primary: #F57C00;
             --md-sys-color-primary-container: #FFDCC2;
             --md-sys-color-on-primary-container: #3E1C00;
             --md-sys-color-secondary-container: #FFECB3;
@@ -30,159 +33,822 @@
             --md-transition: 0.2s cubic-bezier(0.2, 0, 0, 1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; user-select: none; }
-        body { 
-            background-color: var(--md-sys-color-background); 
-            color: var(--md-sys-color-on-surface); 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            overflow: hidden; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+            user-select: none;
         }
 
-        .ripple-btn { position: relative; overflow: hidden; }
-        .ripple { position: absolute; border-radius: 50%; transform: scale(0); animation: ripple-anim 0.6s linear; background-color: rgba(0, 0, 0, 0.12); pointer-events: none; }
-        @keyframes ripple-anim { to { transform: scale(4); opacity: 0; } }
-
-        .top-app-bar { height: 64px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; background-color: var(--md-sys-color-background); z-index: 10; }
-        .top-bar-left { display: flex; align-items: center; gap: 8px; }
-        .top-bar-right { display: flex; align-items: center; gap: 16px; margin-left: auto;}
-
-        .icon-btn { border: none; background: transparent; cursor: pointer; width: 48px; height: 48px; border-radius: var(--md-shape-full); display: flex; align-items: center; justify-content: center; color: var(--md-sys-color-on-surface-variant); transition: var(--md-transition); }
-        .icon-btn:hover { background-color: rgba(0,0,0,0.06); }
-
-        .logo-text { font-size: 20px; font-weight: 700; color: var(--md-sys-color-primary); display: flex; align-items: center; gap: 12px; }
-        .logo-text svg { width: 32px; height: 32px; }
-
-        .user-profile-wrapper { position: relative; }
-        .user-profile { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: var(--md-shape-full); background-color: var(--md-sys-color-surface-container); cursor: pointer; transition: var(--md-transition); }
-        .user-profile:hover { background-color: var(--md-sys-color-surface-container-high); }
-        .user-avatar { width: 32px; height: 32px; border-radius: 50%; background-color: var(--md-sys-color-primary); color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 14px; overflow: hidden; }
-        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        #user-name { font-size: 14px; font-weight: 500; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        
-        .user-menu { position: absolute; top: 100%; right: 0; margin-top: 8px; background-color: var(--md-sys-color-surface); border-radius: var(--md-shape-medium); padding: 8px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: scale(0.95) translateY(-10px); pointer-events: none; transition: var(--md-transition); min-width: 160px; z-index: 101; }
-        .user-menu.show { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
-
-        .app-container { display: flex; flex: 1; overflow: hidden; position: relative; }
-
-        .sidebar { width: 280px; display: flex; flex-direction: column; gap: 4px; background-color: var(--md-sys-color-background); transition: var(--md-transition); flex-shrink: 0; }
-        .sidebar-header { display: none; padding: 16px 24px; align-items: center; gap: 12px; }
-        .nav-items-container { padding: 12px; display: flex; flex-direction: column; gap: 4px; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-radius: var(--md-shape-full); cursor: pointer; color: var(--md-sys-color-on-surface-variant); transition: var(--md-transition); }
-        .nav-item:hover { background-color: rgba(0,0,0,0.04); }
-        .nav-item.active { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); font-weight: 500; }
-
-        .main-workspace { flex: 1; background-color: var(--md-sys-color-surface); margin: 0 16px 16px 16px; border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: var(--md-transition); }
-        
-        .breadcrumb-container { padding: 12px 24px; display: flex; align-items: center; border-bottom: 1px solid var(--md-sys-color-surface-container); min-height: 64px;}
-        .breadcrumb-text-area { flex: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 18px; color: var(--md-sys-color-on-surface); font-weight: 500; }
-        .crumb { cursor: pointer; padding: 4px 8px; border-radius: var(--md-shape-small); transition: var(--md-transition); }
-        .crumb:hover { background-color: var(--md-sys-color-surface-container); }
-        .crumb-separator { font-size: 20px; color: var(--md-sys-color-outline); }
-        .history-actions { display: flex; align-items: center; gap: 4px; }
-
-        .search-container { position: relative; }
-        .search-wrapper { background-color: var(--md-sys-color-surface-container); border-radius: var(--md-shape-full); padding: 8px 16px; display: flex; align-items: center; gap: 8px; transition: var(--md-transition); width: 320px; }
-        .search-wrapper:focus-within { background-color: var(--md-sys-color-surface); box-shadow: 0 0 0 2px var(--md-sys-color-primary); }
-        .search-wrapper input { border: none; outline: none; background: transparent; width: 100%; font-size: 14px; color: var(--md-sys-color-on-surface); }
-        #search-count { font-size: 12px; color: var(--md-sys-color-primary); font-weight: 500; white-space: nowrap; }
-        
-        .search-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--md-sys-color-surface); box-shadow: 0 8px 24px rgba(0,0,0,0.15); border-radius: var(--md-shape-medium); margin-top: 8px; max-height: 300px; overflow-y: auto; z-index: 200; display: none; }
-        .search-dropdown.show { display: block; }
-        .search-result-item { padding: 12px 16px; display: flex; flex-direction: column; cursor: pointer; border-bottom: 1px solid var(--md-sys-color-surface-container); transition: var(--md-transition); }
-        .search-result-item:hover { background-color: var(--md-sys-color-surface-container); }
-        .sr-name { font-size: 14px; font-weight: 500; color: var(--md-sys-color-on-surface); }
-        .sr-path { font-size: 12px; color: var(--md-sys-color-outline); margin-top: 4px; }
-
-        .progress-bar-container { width: 100%; height: 4px; background-color: transparent; position: relative; overflow: hidden; }
-        .progress-bar-fill { height: 100%; width: 0%; background-color: var(--md-sys-color-primary); transition: width 0.2s ease; display: none; }
-
-        .file-list-view { flex: 1; overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column;}
-        .list-header { display: grid; grid-template-columns: 2.5fr 1fr 1fr auto; padding: 0 24px; font-size: 13px; font-weight: 500; color: var(--md-sys-color-on-surface-variant); border-bottom: 1px solid var(--md-sys-color-surface-container); align-items: center; min-height: 48px; }
-        .list-header-actions { display: flex; align-items: center; gap: 4px; justify-content: flex-end;}
-        
-        .file-row { display: grid; grid-template-columns: 2.5fr 1fr 1fr 60px; padding: 12px 24px; align-items: center; cursor: pointer; border-bottom: 1px solid var(--md-sys-color-surface-container); transition: background-color 0.15s, outline 0.15s; outline: 2px solid transparent; outline-offset: -2px; }
-        .file-row:hover { background-color: var(--md-sys-color-surface-container); }
-        .file-row.selected { background-color: var(--md-sys-color-secondary-container); outline: 2px solid var(--md-sys-color-primary); }
-        .file-row.drag-over { background-color: var(--md-sys-color-primary-container) !important; outline: 2px dashed var(--md-sys-color-primary); }
-        
-        .cell-name { display: flex; align-items: center; gap: 16px; font-weight: 500; pointer-events: none; }
-        .cell-info { font-size: 13px; color: var(--md-sys-color-on-surface-variant); pointer-events: none; }
-        .icon-folder { color: var(--md-sys-color-primary); }
-        .icon-file { color: var(--md-sys-color-outline); }
-        .icon-star { color: #F4B400; font-size: 18px; margin-left: 8px; }
-
-        .action-menu-btn { border: none; background: transparent; cursor: pointer; width: 36px; height: 36px; border-radius: var(--md-shape-full); display: flex; align-items: center; justify-content: center; color: var(--md-sys-color-on-surface-variant); }
-        .action-menu-btn:hover { background-color: rgba(0,0,0,0.06); }
-
-        .context-menu { position: fixed; background-color: var(--md-sys-color-surface); border-radius: var(--md-shape-medium); padding: 8px 0; min-width: 180px; box-shadow: 0px 8px 24px rgba(0,0,0,0.15); z-index: 100; opacity: 0; transform: scale(0.9); transition: var(--md-transition); pointer-events: none; }
-        .context-menu.show { opacity: 1; transform: scale(1); pointer-events: auto; }
-        .menu-item { padding: 10px 16px; display: flex; align-items: center; gap: 12px; font-size: 14px; cursor: pointer; color: var(--md-sys-color-on-surface); }
-        .menu-item:hover { background-color: rgba(0,0,0,0.05); }
-        .menu-item .material-symbols-outlined { font-size: 20px; color: var(--md-sys-color-on-surface-variant); }
-        .menu-item.danger-item { color: var(--md-sys-color-error); }
-        .menu-item.danger-item .material-symbols-outlined { color: var(--md-sys-color-error); }
-
-        .dialog-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: var(--md-transition); }
-        .dialog-overlay.show { opacity: 1; pointer-events: auto; }
-        .dialog-card { background-color: var(--md-sys-color-surface); width: 90%; max-width: 400px; border-radius: 28px; padding: 24px; box-shadow: 0px 10px 30px rgba(0,0,0,0.2); transform: translateY(30px); transition: var(--md-transition); display: flex; flex-direction: column; }
-        .dialog-overlay.show .dialog-card { transform: translateY(0); }
-        .dialog-title { font-size: 24px; margin-bottom: 16px; font-weight: 400; color: var(--md-sys-color-on-surface); }
-        
-        .md-input { width: 100%; padding: 16px; border: 1px solid var(--md-sys-color-outline); border-radius: var(--md-shape-small); background: transparent; font-size: 16px; outline: none; color: var(--md-sys-color-on-surface); }
-        .md-input:focus { border-color: var(--md-sys-color-primary); border-width: 2px; }
-        .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
-        .btn-text { border: none; background: transparent; padding: 10px 24px; border-radius: var(--md-shape-full); font-weight: 500; cursor: pointer; color: var(--md-sys-color-primary); font-size: 14px;}
-        .btn-text:hover { background-color: rgba(245, 124, 0, 0.08); }
-
-        #move-dialog .dialog-card { max-width: 500px; padding: 0; border-radius: 16px; overflow: hidden; height: 80vh; max-height: 600px;}
-        .move-dialog-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid transparent; }
-        .move-dialog-header .btn-text { padding: 8px 16px; font-size: 16px; }
-        .move-dialog-header .btn-text.submit { font-weight: bold; }
-        
-        .move-subtitle { text-align: center; font-size: 13px; color: var(--md-sys-color-on-surface-variant); padding: 0 24px 16px; }
-        
-        .move-item-preview { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 24px; font-weight: 500; font-size: 15px;}
-        .move-item-icon-box { width: 48px; height: 48px; border-radius: 12px; background-color: var(--md-sys-color-surface-container-high); display: flex; align-items: center; justify-content: center; }
-        
-        .move-tree-container { flex: 1; overflow-y: auto; border-top: 1px solid var(--md-sys-color-surface-container); }
-        .tree-node-row { display: flex; align-items: center; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--md-sys-color-surface-container); transition: var(--md-transition); }
-        .tree-node-row:hover { background-color: rgba(0,0,0,0.02); }
-        .tree-node-row.selected { background-color: var(--md-sys-color-surface-container-high); }
-        .tree-indent { width: 24px; height: 100%; flex-shrink: 0; }
-        .tree-icon { color: var(--md-sys-color-primary); margin-right: 12px; }
-        .tree-name { flex: 1; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .tree-chevron { color: var(--md-sys-color-outline-variant); margin-left: 8px; font-size: 20px; transition: transform 0.2s; padding: 4px; border-radius: 50%;}
-        .tree-chevron:hover { background-color: rgba(0,0,0,0.05); }
-        .tree-chevron.expanded { transform: rotate(90deg); }
-
-        @media (min-width: 900px) { 
-            .sidebar.closed { width: 0; overflow: hidden; } 
-            .sidebar-header { display: none; }
+        body {
+            background-color: var(--md-sys-color-background);
+            color: var(--md-sys-color-on-surface);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
         }
+
+        .ripple-btn {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-anim 0.6s linear;
+            background-color: rgba(0, 0, 0, 0.12);
+            pointer-events: none;
+        }
+
+        @keyframes ripple-anim {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .top-app-bar {
+            height: 64px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--md-sys-color-background);
+            z-index: 10;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-left: auto;
+        }
+
+        .icon-btn {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            width: 48px;
+            height: 48px;
+            border-radius: var(--md-shape-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--md-sys-color-on-surface-variant);
+            transition: var(--md-transition);
+        }
+
+        .icon-btn:hover {
+            background-color: rgba(0, 0, 0, 0.06);
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--md-sys-color-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-text svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .user-profile-wrapper {
+            position: relative;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 12px 4px 4px;
+            border-radius: var(--md-shape-full);
+            background-color: var(--md-sys-color-surface-container);
+            cursor: pointer;
+            transition: var(--md-transition);
+        }
+
+        .user-profile:hover {
+            background-color: var(--md-sys-color-surface-container-high);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--md-sys-color-primary);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 14px;
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #user-name {
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .user-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background-color: var(--md-sys-color-surface);
+            border-radius: var(--md-shape-medium);
+            padding: 8px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transform: scale(0.95) translateY(-10px);
+            pointer-events: none;
+            transition: var(--md-transition);
+            min-width: 160px;
+            z-index: 101;
+        }
+
+        .user-menu.show {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+        }
+
+        .app-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .sidebar {
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background-color: var(--md-sys-color-background);
+            transition: var(--md-transition);
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            display: none;
+            padding: 16px 24px;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-items-container {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            border-radius: var(--md-shape-full);
+            cursor: pointer;
+            color: var(--md-sys-color-on-surface-variant);
+            transition: var(--md-transition);
+        }
+
+        .nav-item:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+        }
+
+        .nav-item.active {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            font-weight: 500;
+        }
+
+        .main-workspace {
+            flex: 1;
+            background-color: var(--md-sys-color-surface);
+            margin: 0 16px 16px 16px;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: var(--md-transition);
+        }
+
+        .breadcrumb-container {
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--md-sys-color-surface-container);
+            min-height: 64px;
+        }
+
+        .breadcrumb-text-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            font-size: 18px;
+            color: var(--md-sys-color-on-surface);
+            font-weight: 500;
+        }
+
+        .crumb {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: var(--md-shape-small);
+            transition: var(--md-transition);
+        }
+
+        .crumb:hover {
+            background-color: var(--md-sys-color-surface-container);
+        }
+
+        .crumb-separator {
+            font-size: 20px;
+            color: var(--md-sys-color-outline);
+        }
+
+        .history-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-wrapper {
+            background-color: var(--md-sys-color-surface-container);
+            border-radius: var(--md-shape-full);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--md-transition);
+            width: 320px;
+        }
+
+        .search-wrapper:focus-within {
+            background-color: var(--md-sys-color-surface);
+            box-shadow: 0 0 0 2px var(--md-sys-color-primary);
+        }
+
+        .search-wrapper input {
+            border: none;
+            outline: none;
+            background: transparent;
+            width: 100%;
+            font-size: 14px;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        #search-count {
+            font-size: 12px;
+            color: var(--md-sys-color-primary);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--md-sys-color-surface);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border-radius: var(--md-shape-medium);
+            margin-top: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 200;
+            display: none;
+        }
+
+        .search-dropdown.show {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            border-bottom: 1px solid var(--md-sys-color-surface-container);
+            transition: var(--md-transition);
+        }
+
+        .search-result-item:hover {
+            background-color: var(--md-sys-color-surface-container);
+        }
+
+        .sr-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .sr-path {
+            font-size: 12px;
+            color: var(--md-sys-color-outline);
+            margin-top: 4px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background-color: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--md-sys-color-primary);
+            transition: width 0.2s ease;
+            display: none;
+        }
+
+        .file-list-view {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .list-header {
+            display: grid;
+            grid-template-columns: 2.5fr 1fr 1fr auto;
+            padding: 0 24px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface-variant);
+            border-bottom: 1px solid var(--md-sys-color-surface-container);
+            align-items: center;
+            min-height: 48px;
+        }
+
+        .list-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            justify-content: flex-end;
+        }
+
+        .file-row {
+            display: grid;
+            grid-template-columns: 2.5fr 1fr 1fr 60px;
+            padding: 12px 24px;
+            align-items: center;
+            cursor: pointer;
+            border-bottom: 1px solid var(--md-sys-color-surface-container);
+            transition: background-color 0.15s, outline 0.15s;
+            outline: 2px solid transparent;
+            outline-offset: -2px;
+        }
+
+        .file-row:hover {
+            background-color: var(--md-sys-color-surface-container);
+        }
+
+        .file-row.selected {
+            background-color: var(--md-sys-color-secondary-container);
+            outline: 2px solid var(--md-sys-color-primary);
+        }
+
+        .file-row.drag-over {
+            background-color: var(--md-sys-color-primary-container) !important;
+            outline: 2px dashed var(--md-sys-color-primary);
+        }
+
+        .cell-name {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        .cell-info {
+            font-size: 13px;
+            color: var(--md-sys-color-on-surface-variant);
+            pointer-events: none;
+        }
+
+        .icon-folder {
+            color: var(--md-sys-color-primary);
+        }
+
+        .icon-file {
+            color: var(--md-sys-color-outline);
+        }
+
+        .icon-star {
+            color: #F4B400;
+            font-size: 18px;
+            margin-left: 8px;
+        }
+
+        .action-menu-btn {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: var(--md-shape-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .action-menu-btn:hover {
+            background-color: rgba(0, 0, 0, 0.06);
+        }
+
+        .context-menu {
+            position: fixed;
+            background-color: var(--md-sys-color-surface);
+            border-radius: var(--md-shape-medium);
+            padding: 8px 0;
+            min-width: 180px;
+            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: var(--md-transition);
+            pointer-events: none;
+        }
+
+        .context-menu.show {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        .menu-item {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .menu-item:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .menu-item .material-symbols-outlined {
+            font-size: 20px;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .menu-item.danger-item {
+            color: var(--md-sys-color-error);
+        }
+
+        .menu-item.danger-item .material-symbols-outlined {
+            color: var(--md-sys-color-error);
+        }
+
+        .dialog-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--md-transition);
+        }
+
+        .dialog-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .dialog-card {
+            background-color: var(--md-sys-color-surface);
+            width: 90%;
+            max-width: 400px;
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
+            transform: translateY(30px);
+            transition: var(--md-transition);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dialog-overlay.show .dialog-card {
+            transform: translateY(0);
+        }
+
+        .dialog-title {
+            font-size: 24px;
+            margin-bottom: 16px;
+            font-weight: 400;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .md-input {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid var(--md-sys-color-outline);
+            border-radius: var(--md-shape-small);
+            background: transparent;
+            font-size: 16px;
+            outline: none;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .md-input:focus {
+            border-color: var(--md-sys-color-primary);
+            border-width: 2px;
+        }
+
+        .dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 24px;
+        }
+
+        .btn-text {
+            border: none;
+            background: transparent;
+            padding: 10px 24px;
+            border-radius: var(--md-shape-full);
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--md-sys-color-primary);
+            font-size: 14px;
+        }
+
+        .btn-text:hover {
+            background-color: rgba(245, 124, 0, 0.08);
+        }
+
+        #move-dialog .dialog-card {
+            max-width: 500px;
+            padding: 0;
+            border-radius: 16px;
+            overflow: hidden;
+            height: 80vh;
+            max-height: 600px;
+        }
+
+        .move-dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid transparent;
+        }
+
+        .move-dialog-header .btn-text {
+            padding: 8px 16px;
+            font-size: 16px;
+        }
+
+        .move-dialog-header .btn-text.submit {
+            font-weight: bold;
+        }
+
+        .move-subtitle {
+            text-align: center;
+            font-size: 13px;
+            color: var(--md-sys-color-on-surface-variant);
+            padding: 0 24px 16px;
+        }
+
+        .move-item-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        .move-item-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background-color: var(--md-sys-color-surface-container-high);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .move-tree-container {
+            flex: 1;
+            overflow-y: auto;
+            border-top: 1px solid var(--md-sys-color-surface-container);
+        }
+
+        .tree-node-row {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--md-sys-color-surface-container);
+            transition: var(--md-transition);
+        }
+
+        .tree-node-row:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        .tree-node-row.selected {
+            background-color: var(--md-sys-color-surface-container-high);
+        }
+
+        .tree-indent {
+            width: 24px;
+            height: 100%;
+            flex-shrink: 0;
+        }
+
+        .tree-icon {
+            color: var(--md-sys-color-primary);
+            margin-right: 12px;
+        }
+
+        .tree-name {
+            flex: 1;
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tree-chevron {
+            color: var(--md-sys-color-outline-variant);
+            margin-left: 8px;
+            font-size: 20px;
+            transition: transform 0.2s;
+            padding: 4px;
+            border-radius: 50%;
+        }
+
+        .tree-chevron:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .tree-chevron.expanded {
+            transform: rotate(90deg);
+        }
+
+        @media (min-width: 900px) {
+            .sidebar.closed {
+                width: 0;
+                overflow: hidden;
+            }
+
+            .sidebar-header {
+                display: none;
+            }
+        }
+
         @media (max-width: 899px) {
-            .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; z-index: 99; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
-            .sidebar.open { left: 0; }
-            .sidebar-header { display: flex; } 
-            .top-bar-left .logo-text { display: none; } 
-            #user-name { display: none; } 
-            .user-profile { padding: 4px; } /* 修复头像右侧多余留白 */
-            .drawer-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); z-index: 98; opacity: 0; pointer-events: none; transition: var(--md-transition); }
-            .drawer-overlay.show { opacity: 1; pointer-events: auto; }
-            .main-workspace { margin: 0 0 0 0 !important; border-radius: 0; }
-            .list-header { grid-template-columns: 1fr auto; padding: 0 16px; }
-            .list-header div:nth-child(2), .list-header div:nth-child(3) { display: none; } 
-            .file-row { grid-template-columns: 1fr 60px; padding: 12px 16px;}
-            .file-row .cell-info { display: none; }
-            .search-wrapper { width: 180px; padding: 8px 12px; }
-            .breadcrumb-container { padding: 12px 16px; }
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                top: 0;
+                bottom: 0;
+                z-index: 99;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .sidebar-header {
+                display: flex;
+            }
+
+            .top-bar-left .logo-text {
+                display: none;
+            }
+
+            #user-name {
+                display: none;
+            }
+
+            .user-profile {
+                padding: 4px;
+            }
+
+            /* 修复头像右侧多余留白 */
+            .drawer-overlay {
+                position: fixed;
+                inset: 0;
+                background-color: rgba(0, 0, 0, 0.4);
+                z-index: 98;
+                opacity: 0;
+                pointer-events: none;
+                transition: var(--md-transition);
+            }
+
+            .drawer-overlay.show {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .main-workspace {
+                margin: 0 0 0 0 !important;
+                border-radius: 0;
+            }
+
+            .list-header {
+                grid-template-columns: 1fr auto;
+                padding: 0 16px;
+            }
+
+            .list-header div:nth-child(2),
+            .list-header div:nth-child(3) {
+                display: none;
+            }
+
+            .file-row {
+                grid-template-columns: 1fr 60px;
+                padding: 12px 16px;
+            }
+
+            .file-row .cell-info {
+                display: none;
+            }
+
+            .search-wrapper {
+                width: 180px;
+                padding: 8px 12px;
+            }
+
+            .breadcrumb-container {
+                padding: 12px 16px;
+            }
         }
 
-        .snackbar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background-color: #313033; color: #F4EFF4; padding: 14px 24px; border-radius: var(--md-shape-small); font-size: 14px; box-shadow: 0px 3px 5px rgba(0,0,0,0.2); opacity: 0; transition: var(--md-transition); z-index: 2000; }
-        .snackbar.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .snackbar {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: #313033;
+            color: #F4EFF4;
+            padding: 14px 24px;
+            border-radius: var(--md-shape-small);
+            font-size: 14px;
+            box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: var(--md-transition);
+            z-index: 2000;
+        }
+
+        .snackbar.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
     </style>
 </head>
+
 <body>
 
     <header class="top-app-bar">
@@ -192,9 +858,11 @@
             </button>
             <div class="logo-text">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" fill="#F57C00"/>
-                    <path d="M7 14c-1.66 0-3-1.34-3-3 0-1.31.84-2.41 2-2.83C6.42 6.36 8.08 5 10 5c2.11 0 3.92 1.45 4.7 3.41C15.81 8.16 16.86 8 18 8c2.21 0 4 1.79 4 4 0 2.21-1.79 4-4 4H7z" fill="white"/>
-                    <path d="M11 9v5m-2-2h4" stroke="#F57C00" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="12" r="10" fill="#F57C00" />
+                    <path
+                        d="M7 14c-1.66 0-3-1.34-3-3 0-1.31.84-2.41 2-2.83C6.42 6.36 8.08 5 10 5c2.11 0 3.92 1.45 4.7 3.41C15.81 8.16 16.86 8 18 8c2.21 0 4 1.79 4 4 0 2.21-1.79 4-4 4H7z"
+                        fill="white" />
+                    <path d="M11 9v5m-2-2h4" stroke="#F57C00" stroke-width="2" stroke-linecap="round" />
                 </svg>
                 <span>iNet Drive</span>
             </div>
@@ -204,12 +872,13 @@
             <div class="search-container">
                 <div class="search-wrapper">
                     <span class="material-symbols-outlined">search</span>
-                    <input type="text" id="search-input" placeholder="搜索文件或格式 (空格分词)..." oninput="handleAdvancedSearch()" onfocus="handleAdvancedSearch()">
+                    <input type="text" id="search-input" placeholder="搜索文件或格式 (空格分词)..."
+                        oninput="handleAdvancedSearch()" onfocus="handleAdvancedSearch()">
                     <span id="search-count"></span>
                 </div>
                 <div class="search-dropdown" id="search-dropdown"></div>
             </div>
-            
+
             <div class="user-profile-wrapper">
                 <div class="user-profile ripple-btn" id="user-profile-box" onclick="toggleUserMenu(event)">
                     <div class="user-avatar" id="user-avatar-text">?</div>
@@ -232,10 +901,13 @@
 
         <aside class="sidebar" id="app-drawer">
             <div class="sidebar-header">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px;">
-                    <circle cx="12" cy="12" r="10" fill="#F57C00"/>
-                    <path d="M7 14c-1.66 0-3-1.34-3-3 0-1.31.84-2.41 2-2.83C6.42 6.36 8.08 5 10 5c2.11 0 3.92 1.45 4.7 3.41C15.81 8.16 16.86 8 18 8c2.21 0 4 1.79 4 4 0 2.21-1.79 4-4 4H7z" fill="white"/>
-                    <path d="M11 9v5m-2-2h4" stroke="#F57C00" stroke-width="2" stroke-linecap="round"/>
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    style="width: 32px; height: 32px;">
+                    <circle cx="12" cy="12" r="10" fill="#F57C00" />
+                    <path
+                        d="M7 14c-1.66 0-3-1.34-3-3 0-1.31.84-2.41 2-2.83C6.42 6.36 8.08 5 10 5c2.11 0 3.92 1.45 4.7 3.41C15.81 8.16 16.86 8 18 8c2.21 0 4 1.79 4 4 0 2.21-1.79 4-4 4H7z"
+                        fill="white" />
+                    <path d="M11 9v5m-2-2h4" stroke="#F57C00" stroke-width="2" stroke-linecap="round" />
                 </svg>
                 <span style="font-size: 20px; font-weight: 700; color: var(--md-sys-color-primary);">iNet Drive</span>
             </div>
@@ -322,12 +994,13 @@
                 <button class="btn-text ripple-btn" onclick="closeDialog('move-dialog')">取消</button>
                 <button class="btn-text ripple-btn submit" onclick="triggerMoveFile()">移动</button>
             </div>
-            
+
             <div class="move-subtitle" id="move-subtitle-text">项目将被移动到 "我的云盘"</div>
-            
+
             <div class="move-item-preview">
                 <div class="move-item-icon-box">
-                    <span class="material-symbols-outlined" id="move-preview-icon" style="color: #9C27B0">description</span>
+                    <span class="material-symbols-outlined" id="move-preview-icon"
+                        style="color: #9C27B0">description</span>
                 </div>
                 <span id="move-preview-name">暑假作业</span>
             </div>
@@ -340,27 +1013,27 @@
     <div class="snackbar" id="global-snackbar">操作成功</div>
 
     <script>
-        const API = "https://api.inets.de5.net/api"; 
+        const API = "https://api.inets.de5.net/api";
         const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
         let currentPath = "";
-        let currentView = "drive"; 
+        let currentView = "drive";
         let rawFilesData = [];
-        let activeFocusedItem = null; 
-        
+        let activeFocusedItem = null;
+
         let selectedKeys = new Set();
         let lastSelectedIndex = -1;
-        let currentRenderedItems = []; 
-        
-        let undoStack = []; 
+        let currentRenderedItems = [];
+
+        let undoStack = [];
         let redoStack = [];
 
-        let clipboard = { type: null, items: [] }; 
+        let clipboard = { type: null, items: [] };
 
         let starredKeys = new Set(JSON.parse(localStorage.getItem('inet_starred_keys') || '[]'));
 
-        let folderTreeData = {}; 
-        let expandedFolders = new Set([""]); 
+        let folderTreeData = {};
+        let expandedFolders = new Set([""]);
         let targetMoveFolder = "";
 
         async function fetchAPI(endpoint, options = {}) {
@@ -391,9 +1064,9 @@
                     const avatarEl = document.getElementById("user-avatar-text");
                     if (usernameEl && result.data.nickname) usernameEl.innerText = result.data.nickname;
                     if (avatarEl) {
-                        if(result.data.avatar) {
+                        if (result.data.avatar) {
                             avatarEl.innerHTML = `<img src="${result.data.avatar}" alt="avatar" crossorigin="anonymous">`;
-                        } else if(result.data.nickname) {
+                        } else if (result.data.nickname) {
                             avatarEl.innerText = result.data.nickname.charAt(0).toUpperCase();
                         }
                     }
@@ -423,14 +1096,14 @@
         async function runMutation(apiCallFunc, successMsg, actionPayload = null) {
             try {
                 await apiCallFunc();
-                
+
                 if (actionPayload) {
                     undoStack.push(actionPayload);
-                    redoStack = []; 
+                    redoStack = [];
                 }
-                
+
                 if (successMsg) showSnackbar(successMsg);
-                await fetchFileList(); 
+                await fetchFileList();
             } catch (e) {
                 if (e.message !== "Unauthorized") showSnackbar("操作失败: " + e.message);
             }
@@ -439,7 +1112,7 @@
         async function execUndo() {
             if (undoStack.length === 0) { showSnackbar("没有可以撤销的操作"); return; }
             const action = undoStack.pop();
-            
+
             try {
                 if (action.type === 'move' || action.type === 'cut') {
                     for (const item of action.items) {
@@ -459,14 +1132,14 @@
                 await fetchFileList();
             } catch (e) {
                 showSnackbar("撤销异常，云端同步失败");
-                undoStack.push(action); 
+                undoStack.push(action);
             }
         }
 
         async function execRedo() {
             if (redoStack.length === 0) { showSnackbar("没有可以重做的操作"); return; }
             const action = redoStack.pop();
-            
+
             try {
                 if (action.type === 'move' || action.type === 'cut') {
                     for (const item of action.items) {
@@ -483,7 +1156,7 @@
                 undoStack.push(action);
                 showSnackbar("重做成功并已同步至云端");
                 await fetchFileList();
-            } catch(e) {
+            } catch (e) {
                 showSnackbar("重做异常");
                 redoStack.push(action);
             }
@@ -492,7 +1165,7 @@
         function toggleDrawer() {
             const drawer = document.getElementById("app-drawer");
             const overlay = document.getElementById("drawer-overlay");
-            if (window.innerWidth >= 900) { drawer.classList.toggle("closed"); } 
+            if (window.innerWidth >= 900) { drawer.classList.toggle("closed"); }
             else { drawer.classList.toggle("open"); overlay.classList.toggle("show"); }
         }
 
@@ -506,7 +1179,7 @@
             document.getElementById("nav-trash").classList.remove("active");
             document.getElementById("nav-" + view).classList.add("active");
             selectedKeys.clear();
-            if(window.innerWidth < 900) toggleDrawer(); 
+            if (window.innerWidth < 900) toggleDrawer();
             renderWorkspace();
         }
 
@@ -515,16 +1188,16 @@
                 const res = await fetchAPI("/list");
                 const data = await res.json();
                 rawFilesData = data.files || [];
-                
+
                 const allKeys = new Set(rawFilesData.map(f => f.key));
                 let starredChanged = false;
                 starredKeys.forEach(k => {
-                    if(!allKeys.has(k) && !allKeys.has(k+'/')) {
+                    if (!allKeys.has(k) && !allKeys.has(k + '/')) {
                         starredKeys.delete(k);
                         starredChanged = true;
                     }
                 });
-                if(starredChanged) saveStarredKeys();
+                if (starredChanged) saveStarredKeys();
 
                 renderWorkspace();
             } catch (err) {
@@ -570,7 +1243,7 @@
             rawFilesData.forEach(item => {
                 const key = item.key;
                 if (key.startsWith('.trash/')) return; // 在正常视图中屏蔽隐藏回收站目录
-                
+
                 if (key.startsWith(currentPath)) {
                     const relativeKey = key.substring(currentPath.length);
                     if (!relativeKey) return;
@@ -613,12 +1286,12 @@
 
             starredKeys.forEach(sKey => {
                 if (sKey.startsWith('.trash/')) return;
-                
+
                 const isFolder = sKey.endsWith('/');
                 const pureKey = isFolder ? sKey.substring(0, sKey.length - 1) : sKey;
                 const match = rawFilesData.find(f => f.key === sKey || f.key === pureKey);
-                if(!match && isFolder) {
-                    if(rawFilesData.some(f => f.key.startsWith(sKey))) {
+                if (!match && isFolder) {
+                    if (rawFilesData.some(f => f.key.startsWith(sKey))) {
                         const name = pureKey.split('/').pop();
                         const isSelected = selectedKeys.has(sKey);
                         const row = createRowNode(name, "-", "文件夹", "folder", sKey, true, renderIndex, isSelected, true, true);
@@ -648,7 +1321,7 @@
         function renderTrashView(container) {
             let renderIndex = 0;
             const targetFiles = rawFilesData.filter(f => f.key.startsWith('.trash/'));
-            
+
             targetFiles.forEach(file => {
                 const isF = file.key.endsWith('/');
                 const name = isF ? file.key.split('/').filter(Boolean).pop() : file.key.split('/').pop();
@@ -669,8 +1342,8 @@
         function createRowNode(name, date, size, icon, key, isFolder, index, isSelected, isStarred, showFullPath) {
             const row = document.createElement("div");
             row.className = `file-row ${isSelected ? 'selected' : ''}`;
-            row.draggable = true; 
-            
+            row.draggable = true;
+
             const displayPath = showFullPath ? `<div style="font-size:11px; color:var(--md-sys-color-outline); margin-top:2px;">${key}</div>` : '';
             const starHtml = isStarred ? `<span class="material-symbols-outlined icon-star">star</span>` : '';
 
@@ -686,10 +1359,10 @@
                 <div class="cell-info">${size}</div>
                 <div><button class="action-menu-btn" onclick="openContextMenu(event, '${key}', ${isFolder}, ${index})"><span class="material-symbols-outlined">more_vert</span></button></div>
             `;
-            
+
             row.addEventListener("click", (e) => {
                 if (e.target.closest('.action-menu-btn')) return;
-                
+
                 if (e.ctrlKey || e.metaKey) {
                     if (selectedKeys.has(key)) selectedKeys.delete(key);
                     else selectedKeys.add(key);
@@ -699,7 +1372,7 @@
                     const start = Math.min(lastSelectedIndex, index);
                     const end = Math.max(lastSelectedIndex, index);
                     selectedKeys.clear();
-                    for(let i = start; i <= end; i++) selectedKeys.add(currentRenderedItems[i].key);
+                    for (let i = start; i <= end; i++) selectedKeys.add(currentRenderedItems[i].key);
                     renderWorkspace();
                 } else {
                     selectedKeys.clear();
@@ -753,7 +1426,7 @@
                         if (items.length > 0) {
                             executeBatchMoveAPI(items, key);
                         }
-                    } catch (err) {}
+                    } catch (err) { }
                 });
             }
             return row;
@@ -800,7 +1473,7 @@
                 await fetchAPI("/upload", { method: "POST", body: data });
                 progFill.style.width = "100%";
             }, `上传成功`, actionPayload);
-            
+
             setTimeout(() => { progFill.style.display = "none"; progFill.style.width = "0%"; }, 500);
             input.value = "";
         }
@@ -813,7 +1486,7 @@
             const folderName = document.getElementById("new-folder-name").value.trim();
             if (!folderName) return;
             const targetFolderKey = currentPath + folderName + "/";
-            
+
             let actionPayload = { type: 'create', items: [{ newKey: targetFolderKey }] };
 
             await runMutation(async () => {
@@ -824,7 +1497,7 @@
 
         function openContextMenu(event, key, isFolder, index) {
             event.stopPropagation();
-            
+
             selectedKeys.clear();
             selectedKeys.add(key);
             activeFocusedItem = { key, isFolder };
@@ -832,7 +1505,7 @@
             renderWorkspace();
 
             const menu = document.getElementById("action-menu");
-            menu.innerHTML = ""; 
+            menu.innerHTML = "";
 
             if (key.startsWith('.trash/')) {
                 // 如果是回收站中的文件，仅提供恢复与彻底删除
@@ -853,7 +1526,7 @@
                     }
                     menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
                 }
-                
+
                 menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCopy(); closeActionMenu();"><span class="material-symbols-outlined">content_copy</span>复制</div>`;
                 menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCut(); closeActionMenu();"><span class="material-symbols-outlined">content_cut</span>剪切</div>`;
                 if (clipboard.type && clipboard.items.length > 0) {
@@ -865,13 +1538,13 @@
                 menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
                 menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
             }
-            
+
             menu.classList.add("show");
-            
+
             let topPos = event.clientY;
-            if(topPos + menu.offsetHeight > window.innerHeight) topPos = window.innerHeight - menu.offsetHeight - 10;
+            if (topPos + menu.offsetHeight > window.innerHeight) topPos = window.innerHeight - menu.offsetHeight - 10;
             menu.style.top = `${topPos}px`;
-            
+
             let leftPos = event.clientX;
             if (leftPos + menu.offsetWidth > window.innerWidth) leftPos = window.innerWidth - menu.offsetWidth - 10;
             menu.style.left = `${leftPos}px`;
@@ -892,15 +1565,15 @@
 
         async function handlePaste() {
             if (!clipboard.type || clipboard.items.length === 0) return;
-            const targetDir = currentPath; 
-            
+            const targetDir = currentPath;
+
             const actionItems = [];
-            
+
             await runMutation(async () => {
                 for (const item of clipboard.items) {
                     const name = item.key.split('/').filter(Boolean).pop();
                     const newKey = targetDir + name + (item.isFolder ? '/' : '');
-                    
+
                     if (item.key === newKey || newKey.startsWith(item.key)) continue;
 
                     if (clipboard.type === 'cut') {
@@ -912,9 +1585,9 @@
                     }
                 }
             }, "粘贴成功", { type: clipboard.type, items: actionItems });
-            
+
             if (clipboard.type === 'cut') {
-                clipboard = { type: null, items: [] }; 
+                clipboard = { type: null, items: [] };
             }
         }
 
@@ -923,7 +1596,7 @@
                 const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
                 const data = await res.json();
                 if (!data.success || !data.url) throw new Error("获取地址失败");
-                
+
                 // 改用动态创建 a 标签触发预览
                 const a = document.createElement("a");
                 a.href = data.url;
@@ -942,10 +1615,18 @@
                 const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
                 const data = await res.json();
                 if (!data.success || !data.url) throw new Error("获取地址失败");
-                
+
                 showSnackbar("正在下载...");
-                // 极简浏览器原生下载触发
-                window.location.href = data.url;
+
+                // 直接触发浏览器下载，不在新标签页中打开
+                const a = document.createElement("a");
+                a.href = data.url;
+                a.download = "";              // 建议浏览器下载，而非导航
+                a.style.display = "none";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
             } catch (e) {
                 showSnackbar("下载失败");
             }
@@ -960,7 +1641,7 @@
         }
         async function triggerRename() {
             const newName = document.getElementById("rename-input").value.trim();
-            if(!newName) return;
+            if (!newName) return;
             const oldKey = activeFocusedItem.key;
             let dirPath = "";
             if (activeFocusedItem.isFolder) {
@@ -970,10 +1651,10 @@
             } else {
                 dirPath = oldKey.substring(0, oldKey.lastIndexOf("/") + 1);
             }
-            
+
             let newKey = dirPath + newName + (activeFocusedItem.isFolder ? "/" : "");
-            
-            if(starredKeys.has(oldKey)) {
+
+            if (starredKeys.has(oldKey)) {
                 starredKeys.delete(oldKey);
                 starredKeys.add(newKey);
                 saveStarredKeys();
@@ -990,7 +1671,7 @@
         // 修改删除逻辑为软删除（移至 /.trash/ 文件夹），回收站内点击删除则永久删除
         async function triggerDelete() {
             const targetKey = activeFocusedItem.key;
-            if(starredKeys.has(targetKey)) {
+            if (starredKeys.has(targetKey)) {
                 starredKeys.delete(targetKey);
                 saveStarredKeys();
             }
@@ -1004,7 +1685,7 @@
                 // 软删除，移动到 .trash/ 虚拟根目录
                 const newKey = '.trash/' + targetKey;
                 let actionPayload = { type: 'move', items: [{ oldKey: targetKey, newKey }] };
-                
+
                 await runMutation(async () => {
                     await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: targetKey, newKey }) });
                 }, "已移至最近删除", actionPayload);
@@ -1014,13 +1695,13 @@
 
         async function triggerRestore() {
             const oldKey = activeFocusedItem.key;
-            const newKey = oldKey.replace('.trash/', ''); 
-            
+            const newKey = oldKey.replace('.trash/', '');
+
             let actionPayload = { type: 'move', items: [{ oldKey, newKey }] };
             await runMutation(async () => {
                 await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey, newKey }) });
             }, "已恢复文件", actionPayload);
-            
+
             closeActionMenu();
         }
 
@@ -1030,13 +1711,13 @@
                 const key = item.key;
                 if (key.startsWith('.trash/')) return; // 移动选择框中过滤掉回收站
                 const isFolder = key.endsWith('/');
-                if(isFolder) {
+                if (isFolder) {
                     const parts = key.split('/').filter(Boolean);
                     let currentLevel = tree.children;
                     let currentPathBuild = "";
                     parts.forEach((part, i) => {
                         currentPathBuild += part + '/';
-                        if(!currentLevel[part]) {
+                        if (!currentLevel[part]) {
                             currentLevel[part] = { name: part, key: currentPathBuild, children: {} };
                         }
                         currentLevel = currentLevel[part].children;
@@ -1055,15 +1736,15 @@
 
             const row = document.createElement("div");
             row.className = `tree-node-row ripple-btn ${isSelected ? 'selected' : ''}`;
-            
+
             const indentSpace = document.createElement("div");
             indentSpace.className = "tree-indent";
             indentSpace.style.width = `${depth * 24 + 16}px`;
-            
+
             const icon = document.createElement("span");
             icon.className = "material-symbols-outlined tree-icon";
             icon.innerText = "folder";
-            
+
             const nameSpan = document.createElement("span");
             nameSpan.className = "tree-name";
             nameSpan.innerText = node.name;
@@ -1072,14 +1753,14 @@
             row.appendChild(icon);
             row.appendChild(nameSpan);
 
-            if(hasChildren) {
+            if (hasChildren) {
                 const chevron = document.createElement("span");
                 chevron.className = `material-symbols-outlined tree-chevron ${isExpanded ? 'expanded' : ''}`;
                 chevron.innerText = "chevron_right";
-                
+
                 chevron.onclick = (e) => {
                     e.stopPropagation();
-                    if(isExpanded) expandedFolders.delete(node.key);
+                    if (isExpanded) expandedFolders.delete(node.key);
                     else expandedFolders.add(node.key);
                     refreshTreeUI();
                 };
@@ -1094,7 +1775,7 @@
 
             container.appendChild(row);
 
-            if(isExpanded && hasChildren) {
+            if (isExpanded && hasChildren) {
                 Object.values(node.children).forEach(childNode => {
                     renderTreeUI(childNode, depth + 1, container);
                 });
@@ -1117,14 +1798,14 @@
             closeActionMenu();
             folderTreeData = parseFolderStructure();
             targetMoveFolder = "";
-            expandedFolders = new Set([""]); 
+            expandedFolders = new Set([""]);
 
             const isF = activeFocusedItem.isFolder;
             const name = isF ? activeFocusedItem.key.split('/').filter(Boolean).pop() : activeFocusedItem.key.split('/').pop();
             document.getElementById("move-preview-icon").innerText = isF ? "folder" : "description";
             document.getElementById("move-preview-icon").style.color = isF ? "var(--md-sys-color-primary)" : "#9C27B0";
             document.getElementById("move-preview-name").innerText = name;
-            
+
             updateMoveSubtitle();
             refreshTreeUI();
             openDialog('move-dialog');
@@ -1133,8 +1814,8 @@
         async function triggerMoveFile() {
             const oldKey = activeFocusedItem.key;
             let newKey = targetMoveFolder + (activeFocusedItem.isFolder ? oldKey.split('/').filter(Boolean).pop() + "/" : oldKey.substring(oldKey.lastIndexOf("/") + 1));
-            
-            if(starredKeys.has(oldKey)) {
+
+            if (starredKeys.has(oldKey)) {
                 starredKeys.delete(oldKey);
                 starredKeys.add(newKey);
                 saveStarredKeys();
@@ -1155,16 +1836,16 @@
                     if (item.key !== targetFolderKey && !targetFolderKey.startsWith(item.key)) {
                         const name = item.key.split('/').filter(Boolean).pop();
                         const newKey = targetFolderKey + name + (item.isFolder ? '/' : '');
-                        
-                        if(starredKeys.has(item.key)) {
+
+                        if (starredKeys.has(item.key)) {
                             starredKeys.delete(item.key);
                             starredKeys.add(newKey);
                         }
-                        
-                        await fetchAPI(`/move`, { 
-                            method: "POST", 
-                            headers: { "Content-Type": "application/json" }, 
-                            body: JSON.stringify({ oldKey: item.key, newKey }) 
+
+                        await fetchAPI(`/move`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ oldKey: item.key, newKey })
                         });
                         actionItems.push({ oldKey: item.key, newKey });
                     }
@@ -1179,13 +1860,13 @@
             const countEl = document.getElementById("search-count");
             dropdown.innerHTML = "";
 
-            if (!queryStr) { 
-                dropdown.classList.remove("show"); 
+            if (!queryStr) {
+                dropdown.classList.remove("show");
                 countEl.innerText = "";
-                return; 
+                return;
             }
             const queries = queryStr.split(/\s+/);
-            
+
             const results = rawFilesData.filter(file => {
                 if (file.key.startsWith('.trash/')) return false; // 搜索中过滤回收站
                 const name = file.key.toLowerCase();
@@ -1202,7 +1883,7 @@
                 const fileName = isFolder ? file.key.split('/').filter(Boolean).pop() : file.key.split('/').pop();
                 const row = document.createElement("div");
                 row.className = "search-result-item ripple-btn";
-                row.innerHTML = `<div class="sr-name"><span class="material-symbols-outlined" style="vertical-align:middle; font-size:18px; margin-right:8px; color:${isFolder?'var(--md-sys-color-primary)':'var(--md-sys-color-outline)'}">${isFolder?'folder':'description'}</span>${fileName}</div>
+                row.innerHTML = `<div class="sr-name"><span class="material-symbols-outlined" style="vertical-align:middle; font-size:18px; margin-right:8px; color:${isFolder ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-outline)'}">${isFolder ? 'folder' : 'description'}</span>${fileName}</div>
                                  <div class="sr-path">${file.key}</div>`;
                 row.onclick = () => {
                     dropdown.classList.remove("show");
@@ -1237,29 +1918,29 @@
             const diameter = Math.max(button.clientWidth, button.clientHeight);
             const radius = diameter / 2;
             const rect = button.getBoundingClientRect();
-            
+
             circle.style.width = circle.style.height = `${diameter}px`;
             circle.style.left = `${event.clientX - rect.left - radius}px`;
             circle.style.top = `${event.clientY - rect.top - radius}px`;
             circle.classList.add("ripple");
-            
+
             const existing = button.querySelector('.ripple');
-            if(existing) existing.remove();
-            
+            if (existing) existing.remove();
+
             button.appendChild(circle);
             setTimeout(() => circle.remove(), 600);
         }
 
         function setupGlobalListeners() {
-            document.addEventListener("mousedown", function(e) {
+            document.addEventListener("mousedown", function (e) {
                 const rippleBtn = e.target.closest('.ripple-btn');
-                if(rippleBtn) createRipple(e, rippleBtn);
+                if (rippleBtn) createRipple(e, rippleBtn);
             });
 
-            document.addEventListener("click", (e) => { 
-                closeActionMenu(); 
-                if(!e.target.closest('.user-profile-wrapper')) document.getElementById("user-menu").classList.remove("show");
-                if(!e.target.closest('.search-container')) document.getElementById("search-dropdown").classList.remove("show");
+            document.addEventListener("click", (e) => {
+                closeActionMenu();
+                if (!e.target.closest('.user-profile-wrapper')) document.getElementById("user-menu").classList.remove("show");
+                if (!e.target.closest('.search-container')) document.getElementById("search-dropdown").classList.remove("show");
 
                 if (window.innerWidth < 900) {
                     const drawer = document.getElementById("app-drawer");
@@ -1297,4 +1978,5 @@
         }
     </script>
 </body>
+
 </html>
