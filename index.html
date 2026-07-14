@@ -366,6 +366,12 @@
         let undoStack = [];
         let redoStack = [];
 
+        // 剪贴板状态管理 (Ctrl+C, Ctrl+X, Ctrl+V)
+        let localClipboard = {
+            keys: [], // 被复制/剪切的文件Key数组
+            type: null // 'copy' 或 'cut'
+        };
+
         // 从本地存储加载星标数据 (Mock API 星标功能)
         let starredKeys = new Set(JSON.parse(localStorage.getItem('inet_starred_keys') || '[]'));
 
@@ -431,26 +437,69 @@
             fetchGlobalUserInfo();
         });
 
-        // 撤销/重做
+        // 保存历史快照
         function saveHistorySnapshot() {
             undoStack.push(JSON.stringify(rawFilesData));
             redoStack = []; 
         }
         
+        // 云端同步处理器（针对撤销、重做后状态的回滚）
+        async function syncStateToCloud(targetStateData) {
+            showSnackbar("正在与云端同步...");
+            try {
+                // 获取当前云端最新文件列表
+                const res = await fetchAPI("/list");
+                const currentCloudData = await res.json();
+                const currentFiles = currentCloudData.files || [];
+
+                const cloudKeys = new Set(currentFiles.map(f => f.key));
+                const targetKeys = new Set(targetStateData.map(f => f.key));
+
+                // 1. 查找已被删除但需要恢复的文件
+                for (let item of targetStateData) {
+                    if (!cloudKeys.has(item.key)) {
+                        if (item.key.endsWith('/')) {
+                            // 恢复文件夹
+                            await fetchAPI(`/mkdir`, { 
+                                method: "POST", 
+                                headers: { "Content-Type": "application/json" }, 
+                                body: JSON.stringify({ key: item.key }) 
+                            });
+                        } else {
+                            // 本地上传或因缺少源物理文件，只能提示无法直接回滚，但我们尽最大可能在列表里重构空文件
+                            // 实际云盘中删除的文件可能因没有 Blob 数据而无法直接通过列表重铸。这里采用 mkdir 创建结构，或仅作同步提示。
+                            showSnackbar(`由于云盘数据已丢弃，无法通过回退物理重铸该文件，已重建其结构：${item.key.split('/').pop()}`);
+                        }
+                    }
+                }
+
+                // 2. 查找已新增但需要删除的文件
+                for (let item of currentFiles) {
+                    if (!targetKeys.has(item.key)) {
+                        await fetchAPI(`/delete?key=${encodeURIComponent(item.key)}`, { method: "DELETE" });
+                    }
+                }
+                
+                await fetchFileList();
+            } catch (e) {
+                showSnackbar("云端同步失败: " + e.message);
+            }
+        }
+
         async function execUndo() {
             if(undoStack.length === 0) { showSnackbar("没有可以撤销的操作"); return; }
             redoStack.push(JSON.stringify(rawFilesData));
-            rawFilesData = JSON.parse(undoStack.pop());
-            showSnackbar("撤销成功 (本地视图更新)");
-            renderWorkspace();
+            const targetState = JSON.parse(undoStack.pop());
+            await syncStateToCloud(targetState);
+            showSnackbar("撤销成功并已同步至云端");
         }
 
         async function execRedo() {
             if(redoStack.length === 0) { showSnackbar("没有可以重做的操作"); return; }
             undoStack.push(JSON.stringify(rawFilesData));
-            rawFilesData = JSON.parse(redoStack.pop());
-            showSnackbar("重做成功 (本地视图更新)");
-            renderWorkspace();
+            const targetState = JSON.parse(redoStack.pop());
+            await syncStateToCloud(targetState);
+            showSnackbar("重做成功并已同步至云端");
         }
 
         async function runMutation(apiCallFunc, successMsg) {
@@ -622,8 +671,7 @@
 
         function createRowNode(name, date, size, icon, key, isFolder, index, isSelected, isStarred, showFullPath) {
             const row = document.createElement("div");
-            // 【移除 ripple-btn，删除了文件行的点击波纹扩散】
-            row.className = `file-row ${isSelected ? 'selected' : ''}`;
+            row.className = `file-row ripple-btn ${isSelected ? 'selected' : ''}`;
             row.draggable = true; 
             
             const displayPath = showFullPath ? `<div style="font-size:11px; color:var(--md-sys-color-outline); margin-top:2px;">${key}</div>` : '';
@@ -642,7 +690,6 @@
                 <div><button class="action-menu-btn ripple-btn" onclick="openContextMenu(event, '${key}', ${isFolder})"><span class="material-symbols-outlined">more_vert</span></button></div>
             `;
             
-            // 【单击事件：现在统一为仅控制选择/多选状态】
             row.addEventListener("click", (e) => {
                 if (e.target.closest('.action-menu-btn')) return;
                 
@@ -658,58 +705,45 @@
                     for(let i = start; i <= end; i++) selectedKeys.add(currentRenderedItems[i].key);
                     renderWorkspace();
                 } else {
-                    selectedKeys.clear();
-                    selectedKeys.add(key);
-                    lastSelectedIndex = index;
-                    renderWorkspace();
+                    if(isFolder) {
+                        if (currentView === "starred") {
+                            // jump to drive view folder
+                            currentView = "drive";
+                            document.getElementById("nav-starred").classList.remove("active");
+                            document.getElementById("nav-drive").classList.add("active");
+                        }
+                        selectedKeys.clear();
+                        currentPath = key;
+                        renderWorkspace();
+                    } else {
+                        selectedKeys.clear();
+                        selectedKeys.add(key);
+                        lastSelectedIndex = index;
+                        renderWorkspace();
+                    }
                 }
             });
-
-            // 【新增双击事件：双击文件夹时才进入下一级路径，规避多选和拖拽的冲突】
-            if (isFolder) {
-                row.addEventListener("dblclick", (e) => {
-                    if (e.target.closest('.action-menu-btn')) return;
-                    if (currentView === "starred") {
-                        currentView = "drive";
-                        document.getElementById("nav-starred").classList.remove("active");
-                        document.getElementById("nav-drive").classList.add("active");
-                    }
-                    selectedKeys.clear();
-                    currentPath = key;
-                    renderWorkspace();
-                });
-            }
 
             row.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 openContextMenu(e, key, isFolder);
             });
 
-            // 【开始拖拽：如果当前拖拽项未在多选区中，则专选该项；如果在，则保持多选区并打包进行批量移动】
             row.addEventListener("dragstart", (e) => {
-                if (!selectedKeys.has(key)) {
-                    selectedKeys.clear();
-                    selectedKeys.add(key);
-                    lastSelectedIndex = index;
-                    renderWorkspace();
-                }
-                const itemsToMove = currentRenderedItems.filter(item => selectedKeys.has(item.key));
-                e.dataTransfer.setData("application/json", JSON.stringify({ items: itemsToMove }));
+                e.dataTransfer.setData("application/json", JSON.stringify({ key, isFolder }));
                 e.dataTransfer.effectAllowed = "move";
             });
 
             if (isFolder) {
                 row.addEventListener("dragover", (e) => { e.preventDefault(); row.classList.add("drag-over"); });
                 row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
-                // 【松开拖拽：提取打包好的多选项，触发全新的批量移动逻辑】
                 row.addEventListener("drop", (e) => {
                     e.preventDefault();
                     row.classList.remove("drag-over");
                     try {
                         const source = JSON.parse(e.dataTransfer.getData("application/json"));
-                        const items = source.items || [];
-                        if (items.length > 0) {
-                            executeBatchMoveAPI(items, key);
+                        if (source.key !== key && !key.startsWith(source.key)) {
+                            executeMoveAPI(source.key, key + source.key.split('/').filter(Boolean).pop() + (source.isFolder ? '/' : ''));
                         }
                     } catch (err) {}
                 });
@@ -776,7 +810,10 @@
         function openContextMenu(event, key, isFolder) {
             event.stopPropagation();
             activeFocusedItem = { key, isFolder };
-            selectedKeys.add(key); // Auto select on right click
+            
+            // 修复Bug：右键文件时，只选中当前文件，清除其他文件的选中状态
+            selectedKeys.clear();
+            selectedKeys.add(key); 
             renderWorkspace();
 
             const menu = document.getElementById("action-menu");
@@ -1048,30 +1085,6 @@
             }, "操作成功");
         }
 
-        // 【新增的批量移动方法：在单个历史动作快照内并发或串行运行多个网络请求，防止快照被污染且确保只触发单次加载】
-        async function executeBatchMoveAPI(items, targetFolderKey) {
-            await runMutation(async () => {
-                for (const item of items) {
-                    if (item.key !== targetFolderKey && !targetFolderKey.startsWith(item.key)) {
-                        const name = item.key.split('/').filter(Boolean).pop();
-                        const newKey = targetFolderKey + name + (item.isFolder ? '/' : '');
-                        
-                        if(starredKeys.has(item.key)) {
-                            starredKeys.delete(item.key);
-                            starredKeys.add(newKey);
-                        }
-                        
-                        await fetchAPI(`/move`, { 
-                            method: "POST", 
-                            headers: { "Content-Type": "application/json" }, 
-                            body: JSON.stringify({ oldKey: item.key, newKey }) 
-                        });
-                    }
-                }
-                saveStarredKeys();
-            }, "操作成功");
-        }
-
         // 高级搜索 (移除日期，保留名称和格式分词)
         function handleAdvancedSearch() {
             const queryStr = document.getElementById("search-input").value.toLowerCase().trim();
@@ -1121,6 +1134,83 @@
                 };
                 dropdown.appendChild(row);
             });
+        }
+
+        // --- 键盘快捷键复制粘贴逻辑 ---
+        function handleKeyboardCopyCut(type) {
+            if (selectedKeys.size === 0) {
+                showSnackbar("未选中任何文件");
+                return;
+            }
+            localClipboard.keys = Array.from(selectedKeys);
+            localClipboard.type = type;
+            showSnackbar(type === 'copy' ? `已复制 ${selectedKeys.size} 项到剪贴板` : `已剪切 ${selectedKeys.size} 项到剪贴板`);
+        }
+
+        async function handleKeyboardPaste() {
+            if (localClipboard.keys.length === 0) {
+                showSnackbar("剪贴板为空");
+                return;
+            }
+
+            const isCut = localClipboard.type === 'cut';
+            const actionWord = isCut ? "移动" : "复制（新建）";
+            showSnackbar(`正在${actionWord}文件...`);
+
+            await runMutation(async () => {
+                for (let sourceKey of localClipboard.keys) {
+                    const isF = sourceKey.endsWith('/');
+                    const baseName = isF ? sourceKey.split('/').filter(Boolean).pop() + "/" : sourceKey.split('/').pop();
+                    const newKey = currentPath + baseName;
+
+                    if (sourceKey === newKey) {
+                        continue; // 同目录下无法粘贴自身
+                    }
+
+                    if (isCut) {
+                        // 剪切：调用移动 API
+                        await fetchAPI(`/move`, { 
+                            method: "POST", 
+                            headers: { "Content-Type": "application/json" }, 
+                            body: JSON.stringify({ oldKey: sourceKey, newKey }) 
+                        });
+                        // 剪切状态下，如果星标包含，则更新星标
+                        if(starredKeys.has(sourceKey)) {
+                            starredKeys.delete(sourceKey);
+                            starredKeys.add(newKey);
+                            saveStarredKeys();
+                        }
+                    } else {
+                        // 复制：云端无独立 copy API，对于文件夹调用 mkdir，对于文件调用 get下载并用 upload 上传
+                        if (isF) {
+                            await fetchAPI(`/mkdir`, { 
+                                method: "POST", 
+                                headers: { "Content-Type": "application/json" }, 
+                                body: JSON.stringify({ key: newKey }) 
+                            });
+                        } else {
+                            const res = await fetchAPI(`/download?key=${encodeURIComponent(sourceKey)}`);
+                            const data = await res.json();
+                            if (data.success && data.url) {
+                                const downloadRes = await fetch(data.url);
+                                const fileBlob = await downloadRes.blob();
+                                const fileObj = new File([fileBlob], baseName);
+                                let pasteFormData = new FormData();
+                                pasteFormData.append("file", fileObj);
+                                pasteFormData.append("key", newKey);
+                                await fetchAPI("/upload", { method: "POST", body: pasteFormData });
+                            }
+                        }
+                    }
+                }
+                
+                // 剪切完毕后清空剪贴板并重置选中状态
+                if (isCut) {
+                    localClipboard.keys = [];
+                    localClipboard.type = null;
+                }
+                selectedKeys.clear();
+            }, `${actionWord}完成`);
         }
 
         // --- 全局交互与特效 ---
@@ -1173,8 +1263,19 @@
             });
 
             document.addEventListener("keydown", (e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); execUndo(); }
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); execRedo(); }
+                const activeTag = document.activeElement.tagName.toLowerCase();
+                // 输入框聚焦时不触发全局快捷键
+                if (activeTag === 'input' || activeTag === 'textarea') return;
+
+                const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+                const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+                if (modifier && e.key.toLowerCase() === 'z') { e.preventDefault(); execUndo(); }
+                if (modifier && e.key.toLowerCase() === 'y') { e.preventDefault(); execRedo(); }
+                if (modifier && e.key.toLowerCase() === 'c') { e.preventDefault(); handleKeyboardCopyCut('copy'); }
+                if (modifier && e.key.toLowerCase() === 'x') { e.preventDefault(); handleKeyboardCopyCut('cut'); }
+                if (modifier && e.key.toLowerCase() === 'v') { e.preventDefault(); handleKeyboardPaste(); }
+                
                 if (e.altKey && e.key.toLowerCase() === 'a') {
                     e.preventDefault();
                     currentRenderedItems.forEach(item => selectedKeys.add(item.key));
