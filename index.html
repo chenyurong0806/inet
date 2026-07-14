@@ -1039,9 +1039,9 @@
         const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
         // ★★★ 分片上传配置 ★★★
-        const CHUNK_SIZE = 10 * 1024 * 1024; // 每个分片 10MB
-        const MAX_CONCURRENT_CHUNKS = 4; // 最多同时上传 4 个分片
-        const MAX_CHUNK_RETRIES = 4; // 每个分片最多重试 4 次
+        const CHUNK_SIZE = 5 * 1024 * 1024; // 每个分片 5MB
+        const MAX_CONCURRENT_CHUNKS = 3; // 最多同时上传 3 个分片
+        const MAX_CHUNK_RETRIES = 3; // 每个分片最多重试 3 次
 
         let currentPath = "";
         let currentView = "drive";
@@ -1071,12 +1071,6 @@
         async function fetchAPI(endpoint, options = {}) {
             const token = localStorage.getItem("auth_token") || "";
             const headers = { ...(options.headers || {}), "Authorization": `Bearer ${token}` };
-
-            // ★ 自动补全 Content-Type，确保 Worker 能正确解析 JSON body
-            if (options.body && typeof options.body === 'string' && !headers['Content-Type']) {
-                headers['Content-Type'] = 'application/json';
-            }
-
             const response = await fetch(API + endpoint, { ...options, headers });
             if (response.status === 401) {
                 localStorage.removeItem("auth_token");
@@ -1572,7 +1566,7 @@
                 } else {
                     const uploadedSize = completed * CHUNK_SIZE;
                     progText.innerText =
-                        `正在上传 ${completed}/${total} (${percentage}%) — ${formatBytes(Math.min(uploadedSize, total * CHUNK_SIZE))}`;
+                        `正在上传分片 ${completed}/${total} (${percentage}%) — ${formatBytes(Math.min(uploadedSize, total * CHUNK_SIZE))}`;
                 }
             }
         }
@@ -1640,7 +1634,7 @@
                         throw err;
                     }
                     if (attempt < MAX_CHUNK_RETRIES - 1) {
-                        // 指数退避：2s, 4s, 8s...
+                        // 指数退避：1s, 2s, 4s...
                         const delay = 1000 * Math.pow(2, attempt);
                         console.warn(`分片 ${chunkIndex} 上传失败，${delay}ms 后重试 (${attempt + 1}/${MAX_CHUNK_RETRIES})`,
                             err);
@@ -1666,15 +1660,6 @@
             let nextIndex = 0;
             let firstError = null;
             let aborted = false;
-            const parts = []; // ★ 新增：用于收集每个成功分片的 partNumber 和 etag
-
-            const globalTimeout = setTimeout(() => {
-                if (!aborted) {
-                    firstError = new Error("上传超时（超过30分钟）");
-                    aborted = true;
-                    if (activeUploadAborter) activeUploadAborter.abort();
-                }
-            }, 30 * 60 * 1000);
 
             onProgress(completedCount, totalChunks);
 
@@ -1682,25 +1667,23 @@
                 while (nextIndex < totalChunks && !aborted) {
                     const idx = nextIndex++;
                     try {
-                        const res = await uploadChunkWithRetry(file, idx, chunks[idx], totalChunks, uploadId, targetKey, signal);
-                        const data = await res.json();
-
-                        // ★ 核心修复：记录分片结果用于最后的合并
-                        parts.push({ partNumber: data.partNumber, etag: data.etag });
-
+                        await uploadChunkWithRetry(file, idx, chunks[idx], totalChunks, uploadId, targetKey, signal);
                         completedCount++;
                         onProgress(completedCount, totalChunks);
                     } catch (err) {
-                        if (!aborted) {
+                        if (err.name === 'AbortError' || err.message === 'Unauthorized') {
                             aborted = true;
-                            firstError = err;
-                            if (activeUploadAborter) activeUploadAborter.abort();
+                            if (!firstError) firstError = err;
+                        } else {
+                            aborted = true;
+                            if (!firstError) firstError = err;
                         }
                         break;
                     }
                 }
             }
 
+            // 启动并发 worker
             const concurrency = Math.min(MAX_CONCURRENT_CHUNKS, totalChunks);
             const workers = [];
             for (let i = 0; i < concurrency; i++) {
@@ -1708,77 +1691,90 @@
             }
 
             await Promise.all(workers);
-            clearTimeout(globalTimeout);
 
             if (firstError) {
                 throw firstError;
             }
-
-            return parts; // ★ 核心修复：返回数组供外部调用
         }
 
         /**
          * 合并分片（调用后端 merge 接口）
          */
+        async function mergeChunksAPI(targetKey, uploadId, totalChunks) {
+            const response = await fetchAPI("/upload/merge", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    key: targetKey,
+                    uploadId: uploadId,
+                    totalChunks: totalChunks,
+                }),
+            });
+            if (!response.ok) {
+                throw new Error(`合并分片失败 (HTTP ${response.status})`);
+            }
+            return response;
+        }
+
+        /**
+         * ★★★ 分片上传主流程 ★★★
+         * @param {File} file - 要上传的文件
+         * @param {string} targetKey - 最终存储路径
+         */
         async function uploadFileInChunks(file, targetKey) {
-            isUploading = true; // ★ 修复：加锁，防止多重点击
+            // 创建 AbortController 用于取消
             const abortController = new AbortController();
             activeUploadAborter = abortController;
+            isUploading = true;
 
             const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+            const uploadId = generateUploadId(file);
+
+            // 切割分片
+            const chunks = [];
+            for (let i = 0; i < totalChunks; i++) {
+                const start = i * CHUNK_SIZE;
+                const end = Math.min(start + CHUNK_SIZE, file.size);
+                chunks.push(file.slice(start, end));
+            }
+
+            updateUploadProgress(0, totalChunks, `准备上传 ${file.name}（共 ${totalChunks} 个分片）...`);
 
             try {
-                // 1. 初始化 multipart upload，并发送真实的 contentType
-                const initRes = await fetchAPI("/upload/init", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        key: targetKey,
-                        contentType: file.type || "application/octet-stream"
-                    })
-                });
-                const { uploadId } = await initRes.json();
-
-                // 2. 准备所有分片
-                const chunks = [];
-                for (let i = 0; i < totalChunks; i++) {
-                    chunks.push(file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE));
-                }
-
-                // 3. ★ 核心修复：调用并发上传并拿到结果
-                const parts = await uploadAllChunksConcurrently(
-                    file, chunks, totalChunks, uploadId, targetKey, abortController.signal,
-                    (completed, total) => updateUploadProgress(completed, total)
+                // 阶段一：并发上传所有分片
+                await uploadAllChunksConcurrently(
+                    file,
+                    chunks,
+                    totalChunks,
+                    uploadId,
+                    targetKey,
+                    abortController.signal,
+                    (completed, total) => {
+                        updateUploadProgress(completed, total);
+                    }
                 );
 
-                // 4. 合并分片
-                await fetchAPI("/upload/merge", {
-                    method: "POST",
-                    body: JSON.stringify({ key: targetKey, uploadId, parts })
-                });
+                // 阶段二：合并分片（在 runMutation 中执行，以便记录撤销栈）
+                updateUploadProgress(totalChunks, totalChunks, "正在合并分片...");
 
-                showSnackbar("上传成功");
-                await fetchFileList();
+                const actionPayload = { type: 'create', items: [{ newKey: targetKey }] };
+
+                await runMutation(async () => {
+                    await mergeChunksAPI(targetKey, uploadId, totalChunks);
+                }, `上传成功: ${file.name}`, actionPayload);
+
             } catch (err) {
-                // 拦截如果是主动取消则友好提示
                 if (err.name === 'AbortError') {
                     showSnackbar("上传已取消");
+                } else if (err.message === 'Unauthorized') {
+                    // 已在 fetchAPI 或 uploadChunkWithRetry 中处理
                 } else {
-                    showSnackbar("上传失败: " + err.message);
-                }
-
-                // 失败时尝试通知后端 abort
-                if (activeUploadAborter) {
-                    try {
-                        await fetchAPI("/upload/abort", {
-                            method: "POST",
-                            body: JSON.stringify({ key: targetKey, uploadId: activeUploadAborter.uploadId })
-                        });
-                    } catch (e) { }
+                    showSnackbar("上传失败: " + (err.message || "未知错误"));
                 }
             } finally {
-                isUploading = false; // ★ 修复：解锁
-                activeUploadAborter = null;
                 hideUploadProgress();
+                activeUploadAborter = null;
+                isUploading = false;
             }
         }
 
@@ -1865,6 +1861,7 @@
                     }
                     menu.innerHTML +=
                         `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
+
                     // 新增：复制共享链接
                     menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerCopyShareLink()"><span class="material-symbols-outlined">link</span>复制共享链接</div>`;
                 }
@@ -1897,17 +1894,6 @@
             let leftPos = event.clientX;
             if (leftPos + menu.offsetWidth > window.innerWidth) leftPos = window.innerWidth - menu.offsetWidth - 10;
             menu.style.left = `${leftPos}px`;
-        }
-
-        async function triggerCopyShareLink() {
-            const token = localStorage.getItem("auth_token") || "";
-            const url = `https://api.inets.de5.net/api/download?key=${encodeURIComponent(activeFocusedItem.key)}&token=${encodeURIComponent(token)}`;
-            navigator.clipboard.writeText(url).then(() => {
-                showSnackbar("共享链接已复制到剪贴板");
-            }).catch(() => {
-                showSnackbar("复制失败，请手动复制链接");
-            });
-            closeActionMenu();
         }
 
         function closeActionMenu() { document.getElementById("action-menu").classList.remove("show"); }
@@ -1963,22 +1949,58 @@
 
         // ==================== 预览与下载 ====================
         async function triggerPreview() {
-            const token = localStorage.getItem("auth_token") || "";
-            const url = `https://api.inets.de5.net/api/download?key=${encodeURIComponent(activeFocusedItem.key)}&token=${encodeURIComponent(token)}`;
-            window.open(url, "_blank");
+            try {
+                const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
+                const data = await res.json();
+                if (!data.success || !data.url) throw new Error("获取地址失败");
+
+                const a = document.createElement("a");
+                a.href = data.url;
+                a.target = "_blank";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch (e) {
+                showSnackbar("预览失败");
+            }
+            closeActionMenu();
+        }
+
+
+        async function triggerCopyShareLink() {
+            try {
+                const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
+                const data = await res.json();
+                if (!data.success || !data.url) throw new Error("获取链接失败");
+
+                // 将链接写入剪贴板
+                await navigator.clipboard.writeText(data.url);
+                showSnackbar("共享链接已复制到剪贴板");
+            } catch (e) {
+                showSnackbar("获取共享链接失败");
+            }
             closeActionMenu();
         }
 
         async function triggerDownload() {
-            const token = localStorage.getItem("auth_token") || "";
-            const url = `https://api.inets.de5.net/api/download?key=${encodeURIComponent(activeFocusedItem.key)}&token=${encodeURIComponent(token)}`;
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "";
-            a.style.display = "none";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            try {
+                const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
+                const data = await res.json();
+                if (!data.success || !data.url) throw new Error("获取地址失败");
+
+                showSnackbar("正在下载...");
+
+                const a = document.createElement("a");
+                a.href = data.url;
+                a.download = "";
+                a.style.display = "none";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+            } catch (e) {
+                showSnackbar("下载失败");
+            }
             closeActionMenu();
         }
 
