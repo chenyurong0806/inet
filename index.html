@@ -398,6 +398,20 @@
             display: none;
         }
 
+        /* 新增：上传进度文字提示 */
+        .upload-progress-text {
+            text-align: center;
+            font-size: 12px;
+            color: var(--md-sys-color-on-surface-variant);
+            padding: 4px 0;
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         .file-list-view {
             flex: 1;
             overflow-y: auto;
@@ -776,7 +790,6 @@
                 padding: 4px;
             }
 
-            /* 修复头像右侧多余留白 */
             .drawer-overlay {
                 position: fixed;
                 inset: 0;
@@ -885,7 +898,8 @@
                     <span id="user-name">加载中...</span>
                 </div>
                 <div class="user-menu" id="user-menu">
-                    <div class="menu-item ripple-btn" onclick="window.open('https://user.chenyurong.qzz.io', '_blank')">
+                    <div class="menu-item ripple-btn"
+                        onclick="window.open('https://user.chenyurong.qzz.io', '_blank')">
                         <span class="material-symbols-outlined">manage_accounts</span>管理我的账号
                     </div>
                     <div class="menu-item ripple-btn danger-item" onclick="handleLogout()">
@@ -943,6 +957,8 @@
             <div class="progress-bar-container">
                 <div class="progress-bar-fill" id="upload-progress-fill"></div>
             </div>
+            <!-- 新增：上传进度文字 -->
+            <div class="upload-progress-text" id="upload-progress-text"></div>
 
             <div class="file-list-view">
                 <div class="list-header">
@@ -1013,8 +1029,14 @@
     <div class="snackbar" id="global-snackbar">操作成功</div>
 
     <script>
+        // ==================== 配置与全局变量 ====================
         const API = "https://api.inets.de5.net/api";
         const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
+
+        // ★★★ 分片上传配置 ★★★
+        const CHUNK_SIZE = 5 * 1024 * 1024; // 每个分片 5MB
+        const MAX_CONCURRENT_CHUNKS = 3; // 最多同时上传 3 个分片
+        const MAX_CHUNK_RETRIES = 3; // 每个分片最多重试 3 次
 
         let currentPath = "";
         let currentView = "drive";
@@ -1036,6 +1058,11 @@
         let expandedFolders = new Set([""]);
         let targetMoveFolder = "";
 
+        // ★★★ 分片上传状态管理 ★★★
+        let activeUploadAborter = null; // 当前活跃上传的 AbortController，用于取消
+        let isUploading = false; // 是否正在上传中
+
+        // ==================== API 工具函数 ====================
         async function fetchAPI(endpoint, options = {}) {
             const token = localStorage.getItem("auth_token") || "";
             const headers = { ...(options.headers || {}), "Authorization": `Bearer ${token}` };
@@ -1052,11 +1079,15 @@
             window.location.href = `${LOGIN_SYSTEM}/api/sso-check?from=${encodeURIComponent(window.location.href)}`;
         }
 
+        // ==================== 用户信息与初始化 ====================
         async function fetchGlobalUserInfo() {
             const token = localStorage.getItem("auth_token") || "";
             if (!token) { redirectToLogin(); return; }
             try {
-                const response = await fetch(`${LOGIN_SYSTEM}/api/userinfo`, { method: "GET", headers: { "Authorization": `Bearer ${token}` } });
+                const response = await fetch(`${LOGIN_SYSTEM}/api/userinfo`, {
+                    method: "GET",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
                 if (response.status === 401) { localStorage.removeItem("auth_token"); redirectToLogin(); return; }
                 const result = await response.json();
                 if (result.loggedIn) {
@@ -1065,7 +1096,8 @@
                     if (usernameEl && result.data.nickname) usernameEl.innerText = result.data.nickname;
                     if (avatarEl) {
                         if (result.data.avatar) {
-                            avatarEl.innerHTML = `<img src="${result.data.avatar}" alt="avatar" crossorigin="anonymous">`;
+                            avatarEl.innerHTML =
+                                `<img src="${result.data.avatar}" alt="avatar" crossorigin="anonymous">`;
                         } else if (result.data.nickname) {
                             avatarEl.innerText = result.data.nickname.charAt(0).toUpperCase();
                         }
@@ -1093,6 +1125,7 @@
             fetchGlobalUserInfo();
         });
 
+        // ==================== 撤销/重做系统 ====================
         async function runMutation(apiCallFunc, successMsg, actionPayload = null) {
             try {
                 await apiCallFunc();
@@ -1116,7 +1149,11 @@
             try {
                 if (action.type === 'move' || action.type === 'cut') {
                     for (const item of action.items) {
-                        await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.newKey, newKey: item.oldKey }) });
+                        await fetchAPI(`/move`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ oldKey: item.newKey, newKey: item.oldKey })
+                        });
                     }
                 } else if (action.type === 'copy') {
                     for (const item of action.items) {
@@ -1143,11 +1180,19 @@
             try {
                 if (action.type === 'move' || action.type === 'cut') {
                     for (const item of action.items) {
-                        await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.oldKey, newKey: item.newKey }) });
+                        await fetchAPI(`/move`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ oldKey: item.oldKey, newKey: item.newKey })
+                        });
                     }
                 } else if (action.type === 'copy') {
                     for (const item of action.items) {
-                        await fetchAPI(`/copy`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.oldKey, newKey: item.newKey }) });
+                        await fetchAPI(`/copy`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ oldKey: item.oldKey, newKey: item.newKey })
+                        });
                     }
                 } else if (action.type === 'create') {
                     showSnackbar("文件上传或创建无法重做");
@@ -1162,15 +1207,20 @@
             }
         }
 
+        // ==================== UI 交互 ====================
         function toggleDrawer() {
             const drawer = document.getElementById("app-drawer");
             const overlay = document.getElementById("drawer-overlay");
-            if (window.innerWidth >= 900) { drawer.classList.toggle("closed"); }
-            else { drawer.classList.toggle("open"); overlay.classList.toggle("show"); }
+            if (window.innerWidth >= 900) { drawer.classList.toggle("closed"); } else { drawer.classList.toggle(
+                    "open");
+                overlay.classList.toggle("show"); }
         }
 
-        function toggleUserMenu(e) { e.stopPropagation(); document.getElementById("user-menu").classList.toggle("show"); }
-        function handleLogout() { localStorage.removeItem("auth_token"); redirectToLogin(); }
+        function toggleUserMenu(e) { e.stopPropagation();
+            document.getElementById("user-menu").classList.toggle("show"); }
+
+        function handleLogout() { localStorage.removeItem("auth_token");
+            redirectToLogin(); }
 
         function switchView(view) {
             currentView = view;
@@ -1183,6 +1233,7 @@
             renderWorkspace();
         }
 
+        // ==================== 文件列表获取与渲染 ====================
         async function fetchFileList() {
             try {
                 const res = await fetchAPI("/list");
@@ -1242,7 +1293,7 @@
 
             rawFilesData.forEach(item => {
                 const key = item.key;
-                if (key.startsWith('.trash/')) return; // 在正常视图中屏蔽隐藏回收站目录
+                if (key.startsWith('.trash/')) return;
 
                 if (key.startsWith(currentPath)) {
                     const relativeKey = key.substring(currentPath.length);
@@ -1258,7 +1309,8 @@
                 const fullKey = currentPath + folderName + "/";
                 const isSelected = selectedKeys.has(fullKey);
                 const isStarred = starredKeys.has(fullKey);
-                const row = createRowNode(folderName, "-", "文件夹", "folder", fullKey, true, renderIndex, isSelected, isStarred, false);
+                const row = createRowNode(folderName, "-", "文件夹", "folder", fullKey, true, renderIndex,
+                    isSelected, isStarred, false);
                 currentRenderedItems.push({ key: fullKey, isFolder: true, index: renderIndex });
                 container.appendChild(row);
                 renderIndex++;
@@ -1269,14 +1321,16 @@
                 const isSelected = selectedKeys.has(file.key);
                 const isStarred = starredKeys.has(file.key);
                 const dateStr = file.uploaded ? new Date(file.uploaded).toLocaleDateString() : "-";
-                const row = createRowNode(displayName, dateStr, formatBytes(file.size), "description", file.key, false, renderIndex, isSelected, isStarred, false);
+                const row = createRowNode(displayName, dateStr, formatBytes(file.size), "description", file.key,
+                    false, renderIndex, isSelected, isStarred, false);
                 currentRenderedItems.push({ key: file.key, isFolder: false, index: renderIndex });
                 container.appendChild(row);
                 renderIndex++;
             });
 
             if (currentRenderedItems.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">此文件夹为空</div>`;
+                container.innerHTML =
+                    `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">此文件夹为空</div>`;
             }
         }
 
@@ -1294,7 +1348,8 @@
                     if (rawFilesData.some(f => f.key.startsWith(sKey))) {
                         const name = pureKey.split('/').pop();
                         const isSelected = selectedKeys.has(sKey);
-                        const row = createRowNode(name, "-", "文件夹", "folder", sKey, true, renderIndex, isSelected, true, true);
+                        const row = createRowNode(name, "-", "文件夹", "folder", sKey, true, renderIndex,
+                            isSelected, true, true);
                         currentRenderedItems.push({ key: sKey, isFolder: true, index: renderIndex });
                         container.appendChild(row);
                         renderIndex++;
@@ -1305,7 +1360,8 @@
                     const name = isF ? match.key.split('/').filter(Boolean).pop() : match.key.split('/').pop();
                     const isSelected = selectedKeys.has(match.key);
                     const dateStr = match.uploaded ? new Date(match.uploaded).toLocaleDateString() : "-";
-                    const row = createRowNode(name, dateStr, isF ? "文件夹" : formatBytes(match.size), isF ? "folder" : "description", match.key, isF, renderIndex, isSelected, true, true);
+                    const row = createRowNode(name, dateStr, isF ? "文件夹" : formatBytes(match.size), isF ?
+                        "folder" : "description", match.key, isF, renderIndex, isSelected, true, true);
                     currentRenderedItems.push({ key: match.key, isFolder: isF, index: renderIndex });
                     container.appendChild(row);
                     renderIndex++;
@@ -1314,7 +1370,8 @@
             });
 
             if (currentRenderedItems.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">暂无星标文件</div>`;
+                container.innerHTML =
+                    `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">暂无星标文件</div>`;
             }
         }
 
@@ -1327,15 +1384,16 @@
                 const name = isF ? file.key.split('/').filter(Boolean).pop() : file.key.split('/').pop();
                 const isSelected = selectedKeys.has(file.key);
                 const dateStr = file.uploaded ? new Date(file.uploaded).toLocaleDateString() : "-";
-                // 通过 showFullPath 显示原始删除路径信息
-                const row = createRowNode(name, dateStr, isF ? "文件夹" : formatBytes(file.size), isF ? "folder" : "description", file.key, isF, renderIndex, isSelected, false, true);
+                const row = createRowNode(name, dateStr, isF ? "文件夹" : formatBytes(file.size), isF ? "folder" :
+                    "description", file.key, isF, renderIndex, isSelected, false, true);
                 currentRenderedItems.push({ key: file.key, isFolder: isF, index: renderIndex });
                 container.appendChild(row);
                 renderIndex++;
             });
 
             if (currentRenderedItems.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">回收站为空</div>`;
+                container.innerHTML =
+                    `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">回收站为空</div>`;
             }
         }
 
@@ -1344,8 +1402,10 @@
             row.className = `file-row ${isSelected ? 'selected' : ''}`;
             row.draggable = true;
 
-            const displayPath = showFullPath ? `<div style="font-size:11px; color:var(--md-sys-color-outline); margin-top:2px;">${key}</div>` : '';
-            const starHtml = isStarred ? `<span class="material-symbols-outlined icon-star">star</span>` : '';
+            const displayPath = showFullPath ?
+                `<div style="font-size:11px; color:var(--md-sys-color-outline); margin-top:2px;">${key}</div>` : '';
+            const starHtml = isStarred ?
+                `<span class="material-symbols-outlined icon-star">star</span>` : '';
 
             row.innerHTML = `
                 <div class="cell-name" style="pointer-events: none;">
@@ -1385,7 +1445,7 @@
             if (isFolder) {
                 row.addEventListener("dblclick", (e) => {
                     if (e.target.closest('.action-menu-btn')) return;
-                    if (currentView === "trash") return; // 阻止双击进入回收站目录内部
+                    if (currentView === "trash") return;
                     if (currentView === "starred") {
                         currentView = "drive";
                         document.getElementById("nav-starred").classList.remove("active");
@@ -1415,7 +1475,8 @@
             });
 
             if (isFolder) {
-                row.addEventListener("dragover", (e) => { e.preventDefault(); row.classList.add("drag-over"); });
+                row.addEventListener("dragover", (e) => { e.preventDefault();
+                    row.classList.add("drag-over"); });
                 row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
                 row.addEventListener("drop", (e) => {
                     e.preventDefault();
@@ -1426,7 +1487,7 @@
                         if (items.length > 0) {
                             executeBatchMoveAPI(items, key);
                         }
-                    } catch (err) { }
+                    } catch (err) {}
                 });
             }
             return row;
@@ -1449,39 +1510,291 @@
             let buildPath = "";
             parts.forEach((part) => {
                 buildPath += part + "/";
-                box.innerHTML += `<span class="material-symbols-outlined crumb-separator">chevron_right</span><span class="crumb ripple-btn" onclick="jumpToPath('${buildPath}')">${part}</span>`;
+                box.innerHTML +=
+                    `<span class="material-symbols-outlined crumb-separator">chevron_right</span><span class="crumb ripple-btn" onclick="jumpToPath('${buildPath}')">${part}</span>`;
             });
         }
-        function jumpToPath(path) { currentPath = path; selectedKeys.clear(); renderWorkspace(); }
 
-        function openUploadSelect() { document.getElementById("file-input").click(); }
-        async function handleFileSelect(input) {
-            let file = input.files[0];
-            if (!file) return;
-            let targetKey = currentPath + file.name;
-            let data = new FormData();
-            data.append("file", file);
-            data.append("key", targetKey);
+        function jumpToPath(path) { currentPath = path;
+            selectedKeys.clear();
+            renderWorkspace(); }
 
-            const progFill = document.getElementById("upload-progress-fill");
-            progFill.style.display = "block";
-            setTimeout(() => { progFill.style.width = "40%"; }, 100);
+        // ==================== ★★★ 分片上传核心逻辑 ★★★ ====================
 
-            let actionPayload = { type: 'create', items: [{ newKey: targetKey }] };
-
-            await runMutation(async () => {
-                await fetchAPI("/upload", { method: "POST", body: data });
-                progFill.style.width = "100%";
-            }, `上传成功`, actionPayload);
-
-            setTimeout(() => { progFill.style.display = "none"; progFill.style.width = "0%"; }, 500);
-            input.value = "";
+        /**
+         * 生成唯一的上传会话 ID
+         */
+        function generateUploadId(file) {
+            const rand = crypto.randomUUID ? crypto.randomUUID() :
+                `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+            return `${rand}__${encodeURIComponent(file.name)}__${file.size}`;
         }
 
+        /**
+         * 更新上传进度条和文字
+         * @param {number} completed - 已完成分片数
+         * @param {number} total - 总分片数
+         * @param {string} statusText - 状态文字（可选）
+         */
+        function updateUploadProgress(completed, total, statusText = null) {
+            const progFill = document.getElementById("upload-progress-fill");
+            const progText = document.getElementById("upload-progress-text");
+
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+            progFill.style.display = "block";
+            progFill.style.width = percentage + "%";
+
+            if (progText) {
+                progText.style.display = "block";
+                if (statusText) {
+                    progText.innerText = statusText;
+                } else {
+                    const uploadedSize = completed * CHUNK_SIZE;
+                    progText.innerText =
+                        `正在上传分片 ${completed}/${total} (${percentage}%) — ${formatBytes(Math.min(uploadedSize, total * CHUNK_SIZE))}`;
+                }
+            }
+        }
+
+        /**
+         * 隐藏上传进度条
+         */
+        function hideUploadProgress() {
+            const progFill = document.getElementById("upload-progress-fill");
+            const progText = document.getElementById("upload-progress-text");
+            progFill.style.display = "none";
+            progFill.style.width = "0%";
+            if (progText) {
+                progText.style.display = "none";
+                progText.innerText = "";
+            }
+        }
+
+        /**
+         * 上传单个分片（带重试）
+         * @param {File} file - 原始文件
+         * @param {number} chunkIndex - 分片索引（从0开始）
+         * @param {Blob} chunkBlob - 分片数据
+         * @param {number} totalChunks - 总分片数
+         * @param {string} uploadId - 上传会话ID
+         * @param {string} targetKey - 最终目标路径
+         * @param {AbortSignal} signal - 用于取消的 AbortSignal
+         * @returns {Promise<Response>}
+         */
+        async function uploadChunkWithRetry(file, chunkIndex, chunkBlob, totalChunks, uploadId, targetKey, signal) {
+            let lastError = null;
+
+            for (let attempt = 0; attempt < MAX_CHUNK_RETRIES; attempt++) {
+                try {
+                    const formData = new FormData();
+                    formData.append("file", chunkBlob, file.name + ".part" + chunkIndex);
+                    formData.append("key", targetKey);
+                    formData.append("chunkIndex", chunkIndex);
+                    formData.append("totalChunks", totalChunks);
+                    formData.append("uploadId", uploadId);
+
+                    const token = localStorage.getItem("auth_token") || "";
+                    const response = await fetch(API + "/upload/chunk", {
+                        method: "POST",
+                        headers: { "Authorization": `Bearer ${token}` },
+                        body: formData,
+                        signal: signal,
+                    });
+
+                    if (response.status === 401) {
+                        localStorage.removeItem("auth_token");
+                        redirectToLogin();
+                        throw new Error("Unauthorized");
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`分片 ${chunkIndex} 上传失败 (HTTP ${response.status})`);
+                    }
+
+                    return response;
+                } catch (err) {
+                    lastError = err;
+                    // 如果是取消操作或认证错误，不重试直接抛出
+                    if (err.name === 'AbortError' || err.message === "Unauthorized") {
+                        throw err;
+                    }
+                    if (attempt < MAX_CHUNK_RETRIES - 1) {
+                        // 指数退避：1s, 2s, 4s...
+                        const delay = 1000 * Math.pow(2, attempt);
+                        console.warn(`分片 ${chunkIndex} 上传失败，${delay}ms 后重试 (${attempt + 1}/${MAX_CHUNK_RETRIES})`,
+                            err);
+                        await new Promise(r => setTimeout(r, delay));
+                    }
+                }
+            }
+            throw lastError || new Error(`分片 ${chunkIndex} 上传失败，已重试 ${MAX_CHUNK_RETRIES} 次`);
+        }
+
+        /**
+         * 并发上传所有分片
+         * @param {File} file - 原始文件
+         * @param {Blob[]} chunks - 分片数组
+         * @param {number} totalChunks - 总分片数
+         * @param {string} uploadId - 上传会话ID
+         * @param {string} targetKey - 最终目标路径
+         * @param {AbortSignal} signal - 用于取消的 AbortSignal
+         * @param {Function} onProgress - 进度回调 (completedCount, totalChunks)
+         */
+        async function uploadAllChunksConcurrently(file, chunks, totalChunks, uploadId, targetKey, signal, onProgress) {
+            let completedCount = 0;
+            let nextIndex = 0;
+            let firstError = null;
+            let aborted = false;
+
+            onProgress(completedCount, totalChunks);
+
+            async function worker() {
+                while (nextIndex < totalChunks && !aborted) {
+                    const idx = nextIndex++;
+                    try {
+                        await uploadChunkWithRetry(file, idx, chunks[idx], totalChunks, uploadId, targetKey, signal);
+                        completedCount++;
+                        onProgress(completedCount, totalChunks);
+                    } catch (err) {
+                        if (err.name === 'AbortError' || err.message === 'Unauthorized') {
+                            aborted = true;
+                            if (!firstError) firstError = err;
+                        } else {
+                            aborted = true;
+                            if (!firstError) firstError = err;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // 启动并发 worker
+            const concurrency = Math.min(MAX_CONCURRENT_CHUNKS, totalChunks);
+            const workers = [];
+            for (let i = 0; i < concurrency; i++) {
+                workers.push(worker());
+            }
+
+            await Promise.all(workers);
+
+            if (firstError) {
+                throw firstError;
+            }
+        }
+
+        /**
+         * 合并分片（调用后端 merge 接口）
+         */
+        async function mergeChunksAPI(targetKey, uploadId, totalChunks) {
+            const response = await fetchAPI("/upload/merge", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    key: targetKey,
+                    uploadId: uploadId,
+                    totalChunks: totalChunks,
+                }),
+            });
+            if (!response.ok) {
+                throw new Error(`合并分片失败 (HTTP ${response.status})`);
+            }
+            return response;
+        }
+
+        /**
+         * ★★★ 分片上传主流程 ★★★
+         * @param {File} file - 要上传的文件
+         * @param {string} targetKey - 最终存储路径
+         */
+        async function uploadFileInChunks(file, targetKey) {
+            // 创建 AbortController 用于取消
+            const abortController = new AbortController();
+            activeUploadAborter = abortController;
+            isUploading = true;
+
+            const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+            const uploadId = generateUploadId(file);
+
+            // 切割分片
+            const chunks = [];
+            for (let i = 0; i < totalChunks; i++) {
+                const start = i * CHUNK_SIZE;
+                const end = Math.min(start + CHUNK_SIZE, file.size);
+                chunks.push(file.slice(start, end));
+            }
+
+            updateUploadProgress(0, totalChunks, `准备上传 ${file.name}（共 ${totalChunks} 个分片）...`);
+
+            try {
+                // 阶段一：并发上传所有分片
+                await uploadAllChunksConcurrently(
+                    file,
+                    chunks,
+                    totalChunks,
+                    uploadId,
+                    targetKey,
+                    abortController.signal,
+                    (completed, total) => {
+                        updateUploadProgress(completed, total);
+                    }
+                );
+
+                // 阶段二：合并分片（在 runMutation 中执行，以便记录撤销栈）
+                updateUploadProgress(totalChunks, totalChunks, "正在合并分片...");
+
+                const actionPayload = { type: 'create', items: [{ newKey: targetKey }] };
+
+                await runMutation(async () => {
+                    await mergeChunksAPI(targetKey, uploadId, totalChunks);
+                }, `上传成功: ${file.name}`, actionPayload);
+
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    showSnackbar("上传已取消");
+                } else if (err.message === 'Unauthorized') {
+                    // 已在 fetchAPI 或 uploadChunkWithRetry 中处理
+                } else {
+                    showSnackbar("上传失败: " + (err.message || "未知错误"));
+                }
+            } finally {
+                hideUploadProgress();
+                activeUploadAborter = null;
+                isUploading = false;
+            }
+        }
+
+        // ==================== 文件选择和上传入口 ====================
+        function openUploadSelect() {
+            if (isUploading) {
+                showSnackbar("当前有文件正在上传中，请稍候...");
+                return;
+            }
+            document.getElementById("file-input").click();
+        }
+
+        /**
+         * ★★★ 修改后的 handleFileSelect ★★★
+         * 统一走分片上传流程（小文件也走分片，只有1个分片）
+         */
+        async function handleFileSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const targetKey = currentPath + file.name;
+
+            // 重置 input，允许重复选择同一文件
+            input.value = "";
+
+            // 全部走分片上传
+            await uploadFileInChunks(file, targetKey);
+        }
+
+        // ==================== 文件夹操作 ====================
         function openCreateFolderDialog() {
             document.getElementById("new-folder-name").value = "";
             openDialog('folder-dialog');
         }
+
         async function triggerCreateFolder() {
             const folderName = document.getElementById("new-folder-name").value.trim();
             if (!folderName) return;
@@ -1490,11 +1803,16 @@
             let actionPayload = { type: 'create', items: [{ newKey: targetFolderKey }] };
 
             await runMutation(async () => {
-                await fetchAPI(`/mkdir`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: targetFolderKey }) });
+                await fetchAPI(`/mkdir`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ key: targetFolderKey })
+                });
             }, "新建文件夹成功", actionPayload);
             closeDialog('folder-dialog');
         }
 
+        // ==================== 右键菜单 ====================
         function openContextMenu(event, key, isFolder, index) {
             event.stopPropagation();
 
@@ -1508,35 +1826,45 @@
             menu.innerHTML = "";
 
             if (key.startsWith('.trash/')) {
-                // 如果是回收站中的文件，仅提供恢复与彻底删除
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerRestore()"><span class="material-symbols-outlined">restore_from_trash</span>恢复文件</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete_forever</span>彻底删除</div>`;
+                menu.innerHTML +=
+                    `<div class="menu-item ripple-btn" onclick="triggerRestore()"><span class="material-symbols-outlined">restore_from_trash</span>恢复文件</div>`;
+                menu.innerHTML +=
+                    `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete_forever</span>彻底删除</div>`;
             } else {
-                // 正常的常规菜单
                 const starText = starredKeys.has(key) ? "取消星标" : "添加星标";
                 const starIcon = starredKeys.has(key) ? "star" : "star_border";
 
                 if (isFolder) {
-                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="jumpToPath('${key}'); closeActionMenu();"><span class="material-symbols-outlined">folder_open</span>打开文件夹</div>`;
+                    menu.innerHTML +=
+                        `<div class="menu-item ripple-btn" onclick="jumpToPath('${key}'); closeActionMenu();"><span class="material-symbols-outlined">folder_open</span>打开文件夹</div>`;
                 } else {
                     const ext = key.split('.').pop().toLowerCase();
                     const previewable = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'pdf'].includes(ext);
                     if (previewable) {
-                        menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerPreview()"><span class="material-symbols-outlined">visibility</span>在线预览</div>`;
+                        menu.innerHTML +=
+                            `<div class="menu-item ripple-btn" onclick="triggerPreview()"><span class="material-symbols-outlined">visibility</span>在线预览</div>`;
                     }
-                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
+                    menu.innerHTML +=
+                        `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
                 }
 
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCopy(); closeActionMenu();"><span class="material-symbols-outlined">content_copy</span>复制</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCut(); closeActionMenu();"><span class="material-symbols-outlined">content_cut</span>剪切</div>`;
+                menu.innerHTML +=
+                    `<div class="menu-item ripple-btn" onclick="handleCopy(); closeActionMenu();"><span class="material-symbols-outlined">content_copy</span>复制</div>`;
+                menu.innerHTML +=
+                    `<div class="menu-item ripple-btn" onclick="handleCut(); closeActionMenu();"><span class="material-symbols-outlined">content_cut</span>剪切</div>`;
                 if (clipboard.type && clipboard.items.length > 0) {
-                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handlePaste(); closeActionMenu();"><span class="material-symbols-outlined">content_paste</span>粘贴至当前</div>`;
+                    menu.innerHTML +=
+                        `<div class="menu-item ripple-btn" onclick="handlePaste(); closeActionMenu();"><span class="material-symbols-outlined">content_paste</span>粘贴至当前</div>`;
                 }
 
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="toggleStar('${key}')"><span class="material-symbols-outlined">${starIcon}</span>${starText}</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
+                menu.innerHTML +=
+                    `<div class="menu-item ripple-btn" onclick="toggleStar('${key}')"><span class="material-symbols-outlined">${starIcon}</span>${starText}</div>`;
+                menu.innerHTML +=
+                    `<div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>`;
+                menu.innerHTML +=
+                    `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
+                menu.innerHTML +=
+                    `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
             }
 
             menu.classList.add("show");
@@ -1549,8 +1877,10 @@
             if (leftPos + menu.offsetWidth > window.innerWidth) leftPos = window.innerWidth - menu.offsetWidth - 10;
             menu.style.left = `${leftPos}px`;
         }
+
         function closeActionMenu() { document.getElementById("action-menu").classList.remove("show"); }
 
+        // ==================== 复制/剪切/粘贴 ====================
         function handleCopy() {
             if (selectedKeys.size === 0) return;
             clipboard = { type: 'copy', items: currentRenderedItems.filter(i => selectedKeys.has(i.key)) };
@@ -1577,10 +1907,18 @@
                     if (item.key === newKey || newKey.startsWith(item.key)) continue;
 
                     if (clipboard.type === 'cut') {
-                        await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.key, newKey }) });
+                        await fetchAPI(`/move`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ oldKey: item.key, newKey })
+                        });
                         actionItems.push({ oldKey: item.key, newKey });
                     } else if (clipboard.type === 'copy') {
-                        await fetchAPI(`/copy`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.key, newKey }) });
+                        await fetchAPI(`/copy`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ oldKey: item.key, newKey })
+                        });
                         actionItems.push({ oldKey: item.key, newKey });
                     }
                 }
@@ -1591,13 +1929,13 @@
             }
         }
 
+        // ==================== 预览与下载 ====================
         async function triggerPreview() {
             try {
                 const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
                 const data = await res.json();
                 if (!data.success || !data.url) throw new Error("获取地址失败");
 
-                // 改用动态创建 a 标签触发预览
                 const a = document.createElement("a");
                 a.href = data.url;
                 a.target = "_blank";
@@ -1618,10 +1956,9 @@
 
                 showSnackbar("正在下载...");
 
-                // 直接触发浏览器下载，不在新标签页中打开
                 const a = document.createElement("a");
                 a.href = data.url;
-                a.download = "";              // 建议浏览器下载，而非导航
+                a.download = "";
                 a.style.display = "none";
                 document.body.appendChild(a);
                 a.click();
@@ -1633,12 +1970,14 @@
             closeActionMenu();
         }
 
+        // ==================== 重命名 ====================
         function openRenameDialog() {
             closeActionMenu();
             const name = activeFocusedItem.key.split('/').filter(Boolean).pop();
             document.getElementById("rename-input").value = name;
             openDialog("rename-dialog");
         }
+
         async function triggerRename() {
             const newName = document.getElementById("rename-input").value.trim();
             if (!newName) return;
@@ -1662,13 +2001,17 @@
 
             let actionPayload = { type: 'move', items: [{ oldKey, newKey }] };
             await runMutation(async () => {
-                await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey, newKey }) });
+                await fetchAPI(`/move`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ oldKey, newKey })
+                });
             }, "操作成功", actionPayload);
 
             closeDialog("rename-dialog");
         }
 
-        // 修改删除逻辑为软删除（移至 /.trash/ 文件夹），回收站内点击删除则永久删除
+        // ==================== 删除与恢复 ====================
         async function triggerDelete() {
             const targetKey = activeFocusedItem.key;
             if (starredKeys.has(targetKey)) {
@@ -1677,17 +2020,19 @@
             }
 
             if (currentView === 'trash' || targetKey.startsWith('.trash/')) {
-                // 彻底删除
                 await runMutation(async () => {
                     await fetchAPI(`/delete?key=${encodeURIComponent(targetKey)}`, { method: "DELETE" });
                 }, "已彻底删除");
             } else {
-                // 软删除，移动到 .trash/ 虚拟根目录
                 const newKey = '.trash/' + targetKey;
                 let actionPayload = { type: 'move', items: [{ oldKey: targetKey, newKey }] };
 
                 await runMutation(async () => {
-                    await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: targetKey, newKey }) });
+                    await fetchAPI(`/move`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ oldKey: targetKey, newKey })
+                    });
                 }, "已移至最近删除", actionPayload);
             }
             closeActionMenu();
@@ -1699,17 +2044,22 @@
 
             let actionPayload = { type: 'move', items: [{ oldKey, newKey }] };
             await runMutation(async () => {
-                await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey, newKey }) });
+                await fetchAPI(`/move`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ oldKey, newKey })
+                });
             }, "已恢复文件", actionPayload);
 
             closeActionMenu();
         }
 
+        // ==================== 移动对话框 ====================
         function parseFolderStructure() {
             const tree = { name: "我的云盘", key: "", children: {} };
             rawFilesData.forEach(item => {
                 const key = item.key;
-                if (key.startsWith('.trash/')) return; // 移动选择框中过滤掉回收站
+                if (key.startsWith('.trash/')) return;
                 const isFolder = key.endsWith('/');
                 if (isFolder) {
                     const parts = key.split('/').filter(Boolean);
@@ -1801,7 +2151,8 @@
             expandedFolders = new Set([""]);
 
             const isF = activeFocusedItem.isFolder;
-            const name = isF ? activeFocusedItem.key.split('/').filter(Boolean).pop() : activeFocusedItem.key.split('/').pop();
+            const name = isF ? activeFocusedItem.key.split('/').filter(Boolean).pop() : activeFocusedItem.key.split('/')
+                .pop();
             document.getElementById("move-preview-icon").innerText = isF ? "folder" : "description";
             document.getElementById("move-preview-icon").style.color = isF ? "var(--md-sys-color-primary)" : "#9C27B0";
             document.getElementById("move-preview-name").innerText = name;
@@ -1813,7 +2164,8 @@
 
         async function triggerMoveFile() {
             const oldKey = activeFocusedItem.key;
-            let newKey = targetMoveFolder + (activeFocusedItem.isFolder ? oldKey.split('/').filter(Boolean).pop() + "/" : oldKey.substring(oldKey.lastIndexOf("/") + 1));
+            let newKey = targetMoveFolder + (activeFocusedItem.isFolder ? oldKey.split('/').filter(Boolean).pop() +
+                "/" : oldKey.substring(oldKey.lastIndexOf("/") + 1));
 
             if (starredKeys.has(oldKey)) {
                 starredKeys.delete(oldKey);
@@ -1823,7 +2175,11 @@
 
             let actionPayload = { type: 'move', items: [{ oldKey, newKey }] };
             await runMutation(async () => {
-                await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey, newKey }) });
+                await fetchAPI(`/move`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ oldKey, newKey })
+                });
             }, "操作成功", actionPayload);
 
             closeDialog('move-dialog');
@@ -1854,6 +2210,7 @@
             }, "操作成功", { type: 'move', items: actionItems });
         }
 
+        // ==================== 搜索 ====================
         function handleAdvancedSearch() {
             const queryStr = document.getElementById("search-input").value.toLowerCase().trim();
             const dropdown = document.getElementById("search-dropdown");
@@ -1868,7 +2225,7 @@
             const queries = queryStr.split(/\s+/);
 
             const results = rawFilesData.filter(file => {
-                if (file.key.startsWith('.trash/')) return false; // 搜索中过滤回收站
+                if (file.key.startsWith('.trash/')) return false;
                 const name = file.key.toLowerCase();
                 const ext = name.split('.').pop();
                 return queries.every(q => name.includes(q) || ext.includes(q));
@@ -1883,13 +2240,15 @@
                 const fileName = isFolder ? file.key.split('/').filter(Boolean).pop() : file.key.split('/').pop();
                 const row = document.createElement("div");
                 row.className = "search-result-item ripple-btn";
-                row.innerHTML = `<div class="sr-name"><span class="material-symbols-outlined" style="vertical-align:middle; font-size:18px; margin-right:8px; color:${isFolder ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-outline)'}">${isFolder ? 'folder' : 'description'}</span>${fileName}</div>
+                row.innerHTML =
+                    `<div class="sr-name"><span class="material-symbols-outlined" style="vertical-align:middle; font-size:18px; margin-right:8px; color:${isFolder ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-outline)'}">${isFolder ? 'folder' : 'description'}</span>${fileName}</div>
                                  <div class="sr-path">${file.key}</div>`;
                 row.onclick = () => {
                     dropdown.classList.remove("show");
                     document.getElementById("search-input").value = "";
                     countEl.innerText = "";
-                    const targetFolder = isFolder ? file.key : file.key.substring(0, file.key.lastIndexOf("/") + 1);
+                    const targetFolder = isFolder ? file.key : file.key.substring(0, file.key.lastIndexOf(
+                        "/") + 1);
                     currentView = 'drive';
                     document.getElementById("nav-starred").classList.remove("active");
                     document.getElementById("nav-drive").classList.add("active");
@@ -1904,8 +2263,11 @@
             });
         }
 
+        // ==================== 对话框与提示 ====================
         function openDialog(id) { document.getElementById(id).classList.add("show"); }
+
         function closeDialog(id) { document.getElementById(id).classList.remove("show"); }
+
         function showSnackbar(msg) {
             const bar = document.getElementById("global-snackbar");
             bar.innerText = msg;
@@ -1913,6 +2275,7 @@
             setTimeout(() => { bar.classList.remove("show"); }, 3000);
         }
 
+        // ==================== 涟漪效果 ====================
         function createRipple(event, button) {
             const circle = document.createElement("span");
             const diameter = Math.max(button.clientWidth, button.clientHeight);
@@ -1931,21 +2294,25 @@
             setTimeout(() => circle.remove(), 600);
         }
 
+        // ==================== 全局监听 ====================
         function setupGlobalListeners() {
-            document.addEventListener("mousedown", function (e) {
+            document.addEventListener("mousedown", function(e) {
                 const rippleBtn = e.target.closest('.ripple-btn');
                 if (rippleBtn) createRipple(e, rippleBtn);
             });
 
             document.addEventListener("click", (e) => {
                 closeActionMenu();
-                if (!e.target.closest('.user-profile-wrapper')) document.getElementById("user-menu").classList.remove("show");
-                if (!e.target.closest('.search-container')) document.getElementById("search-dropdown").classList.remove("show");
+                if (!e.target.closest('.user-profile-wrapper')) document.getElementById("user-menu").classList
+                    .remove("show");
+                if (!e.target.closest('.search-container')) document.getElementById("search-dropdown").classList
+                    .remove("show");
 
                 if (window.innerWidth < 900) {
                     const drawer = document.getElementById("app-drawer");
                     const overlay = document.getElementById("drawer-overlay");
-                    if (drawer.classList.contains("open") && !drawer.contains(e.target) && !e.target.closest('.icon-btn')) {
+                    if (drawer.classList.contains("open") && !drawer.contains(e.target) && !e.target.closest(
+                            '.icon-btn')) {
                         drawer.classList.remove("open");
                         overlay.classList.remove("show");
                     }
@@ -1955,19 +2322,32 @@
             document.addEventListener("keydown", (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); execUndo(); }
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); execRedo(); }
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') { e.preventDefault(); handleCopy(); }
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') { e.preventDefault(); handleCut(); }
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') { e.preventDefault(); handlePaste(); }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault();
+                    execUndo(); }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault();
+                    execRedo(); }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') { e.preventDefault();
+                    handleCopy(); }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') { e.preventDefault();
+                    handleCut(); }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') { e.preventDefault();
+                    handlePaste(); }
                 if (e.altKey && e.key.toLowerCase() === 'a') {
                     e.preventDefault();
                     currentRenderedItems.forEach(item => selectedKeys.add(item.key));
                     renderWorkspace();
                 }
             });
+
+            // 页面关闭前尝试取消进行中的上传
+            window.addEventListener("beforeunload", () => {
+                if (activeUploadAborter) {
+                    activeUploadAborter.abort();
+                }
+            });
         }
 
+        // ==================== 工具函数 ====================
         function formatBytes(bytes, decimals = 2) {
             if (!bytes) return '0 B';
             const k = 1024;
