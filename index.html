@@ -9,7 +9,6 @@
 
     <style>
         :root {
-            /* Google Material Design 3 橙色主题 */
             --md-sys-color-background: #FFFBFA;
             --md-sys-color-surface: #FFFFFF;
             --md-sys-color-surface-container: #FFEDE4;
@@ -24,7 +23,6 @@
             --md-sys-color-outline-variant: #D5C2B6;
             --md-sys-color-error: #BA1A1A;
 
-            /* 形状与过渡 */
             --md-shape-small: 8px;
             --md-shape-medium: 12px;
             --md-shape-large: 16px;
@@ -42,12 +40,10 @@
             overflow: hidden; 
         }
 
-        /* 通用涟漪基础类 */
         .ripple-btn { position: relative; overflow: hidden; }
         .ripple { position: absolute; border-radius: 50%; transform: scale(0); animation: ripple-anim 0.6s linear; background-color: rgba(0, 0, 0, 0.12); pointer-events: none; }
         @keyframes ripple-anim { to { transform: scale(4); opacity: 0; } }
 
-        /* 顶部应用栏 */
         .top-app-bar { height: 64px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; background-color: var(--md-sys-color-background); z-index: 10; }
         .top-bar-left { display: flex; align-items: center; gap: 8px; }
         .top-bar-right { display: flex; align-items: center; gap: 16px; margin-left: auto;}
@@ -58,7 +54,6 @@
         .logo-text { font-size: 20px; font-weight: 700; color: var(--md-sys-color-primary); display: flex; align-items: center; gap: 12px; }
         .logo-text svg { width: 32px; height: 32px; }
 
-        /* 用户组件 */
         .user-profile-wrapper { position: relative; }
         .user-profile { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: var(--md-shape-full); background-color: var(--md-sys-color-surface-container); cursor: pointer; transition: var(--md-transition); }
         .user-profile:hover { background-color: var(--md-sys-color-surface-container-high); }
@@ -69,10 +64,8 @@
         .user-menu { position: absolute; top: 100%; right: 0; margin-top: 8px; background-color: var(--md-sys-color-surface); border-radius: var(--md-shape-medium); padding: 8px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: scale(0.95) translateY(-10px); pointer-events: none; transition: var(--md-transition); min-width: 160px; z-index: 101; }
         .user-menu.show { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
 
-        /* 主体布局 */
         .app-container { display: flex; flex: 1; overflow: hidden; position: relative; }
 
-        /* 侧边栏 */
         .sidebar { width: 280px; display: flex; flex-direction: column; gap: 4px; background-color: var(--md-sys-color-background); transition: var(--md-transition); flex-shrink: 0; }
         .sidebar-header { display: none; padding: 16px 24px; align-items: center; gap: 12px; }
         .nav-items-container { padding: 12px; display: flex; flex-direction: column; gap: 4px; }
@@ -80,10 +73,8 @@
         .nav-item:hover { background-color: rgba(0,0,0,0.04); }
         .nav-item.active { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); font-weight: 500; }
 
-        /* 工作区 */
         .main-workspace { flex: 1; background-color: var(--md-sys-color-surface); margin: 0 16px 16px 16px; border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: var(--md-transition); }
         
-        /* 面包屑 & 撤销重做 */
         .breadcrumb-container { padding: 12px 24px; display: flex; align-items: center; border-bottom: 1px solid var(--md-sys-color-surface-container); min-height: 64px;}
         .breadcrumb-text-area { flex: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 18px; color: var(--md-sys-color-on-surface); font-weight: 500; }
         .crumb { cursor: pointer; padding: 4px 8px; border-radius: var(--md-shape-small); transition: var(--md-transition); }
@@ -91,7 +82,6 @@
         .crumb-separator { font-size: 20px; color: var(--md-sys-color-outline); }
         .history-actions { display: flex; align-items: center; gap: 4px; }
 
-        /* 搜索框 */
         .search-container { position: relative; }
         .search-wrapper { background-color: var(--md-sys-color-surface-container); border-radius: var(--md-shape-full); padding: 8px 16px; display: flex; align-items: center; gap: 8px; transition: var(--md-transition); width: 320px; }
         .search-wrapper:focus-within { background-color: var(--md-sys-color-surface); box-shadow: 0 0 0 2px var(--md-sys-color-primary); }
@@ -105,11 +95,9 @@
         .sr-name { font-size: 14px; font-weight: 500; color: var(--md-sys-color-on-surface); }
         .sr-path { font-size: 12px; color: var(--md-sys-color-outline); margin-top: 4px; }
 
-        /* 进度条 */
         .progress-bar-container { width: 100%; height: 4px; background-color: transparent; position: relative; overflow: hidden; }
         .progress-bar-fill { height: 100%; width: 0%; background-color: var(--md-sys-color-primary); transition: width 0.2s ease; display: none; }
 
-        /* 文件列表 */
         .file-list-view { flex: 1; overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column;}
         .list-header { display: grid; grid-template-columns: 2.5fr 1fr 1fr auto; padding: 0 24px; font-size: 13px; font-weight: 500; color: var(--md-sys-color-on-surface-variant); border-bottom: 1px solid var(--md-sys-color-surface-container); align-items: center; min-height: 48px; }
         .list-header-actions { display: flex; align-items: center; gap: 4px; justify-content: flex-end;}
@@ -123,12 +111,11 @@
         .cell-info { font-size: 13px; color: var(--md-sys-color-on-surface-variant); pointer-events: none; }
         .icon-folder { color: var(--md-sys-color-primary); }
         .icon-file { color: var(--md-sys-color-outline); }
-        .icon-star { color: #F4B400; font-size: 18px; margin-left: 8px; } /* Star icon styling */
+        .icon-star { color: #F4B400; font-size: 18px; margin-left: 8px; }
 
         .action-menu-btn { border: none; background: transparent; cursor: pointer; width: 36px; height: 36px; border-radius: var(--md-shape-full); display: flex; align-items: center; justify-content: center; color: var(--md-sys-color-on-surface-variant); }
         .action-menu-btn:hover { background-color: rgba(0,0,0,0.06); }
 
-        /* 上下文菜单 */
         .context-menu { position: fixed; background-color: var(--md-sys-color-surface); border-radius: var(--md-shape-medium); padding: 8px 0; min-width: 180px; box-shadow: 0px 8px 24px rgba(0,0,0,0.15); z-index: 100; opacity: 0; transform: scale(0.9); transition: var(--md-transition); pointer-events: none; }
         .context-menu.show { opacity: 1; transform: scale(1); pointer-events: auto; }
         .menu-item { padding: 10px 16px; display: flex; align-items: center; gap: 12px; font-size: 14px; cursor: pointer; color: var(--md-sys-color-on-surface); }
@@ -137,7 +124,6 @@
         .menu-item.danger-item { color: var(--md-sys-color-error); }
         .menu-item.danger-item .material-symbols-outlined { color: var(--md-sys-color-error); }
 
-        /* 对话框通用样式 */
         .dialog-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: var(--md-transition); }
         .dialog-overlay.show { opacity: 1; pointer-events: auto; }
         .dialog-card { background-color: var(--md-sys-color-surface); width: 90%; max-width: 400px; border-radius: 28px; padding: 24px; box-shadow: 0px 10px 30px rgba(0,0,0,0.2); transform: translateY(30px); transition: var(--md-transition); display: flex; flex-direction: column; }
@@ -150,7 +136,6 @@
         .btn-text { border: none; background: transparent; padding: 10px 24px; border-radius: var(--md-shape-full); font-weight: 500; cursor: pointer; color: var(--md-sys-color-primary); font-size: 14px;}
         .btn-text:hover { background-color: rgba(245, 124, 0, 0.08); }
 
-        /* 移动对话框定制 UI (仿 iOS UI，但是用 MD3 风格) */
         #move-dialog .dialog-card { max-width: 500px; padding: 0; border-radius: 16px; overflow: hidden; height: 80vh; max-height: 600px;}
         .move-dialog-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid transparent; }
         .move-dialog-header .btn-text { padding: 8px 16px; font-size: 16px; }
@@ -172,7 +157,6 @@
         .tree-chevron:hover { background-color: rgba(0,0,0,0.05); }
         .tree-chevron.expanded { transform: rotate(90deg); }
 
-        /* 移动端响应式 */
         @media (min-width: 900px) { 
             .sidebar.closed { width: 0; overflow: hidden; } 
             .sidebar-header { display: none; }
@@ -180,14 +164,14 @@
         @media (max-width: 899px) {
             .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; z-index: 99; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
             .sidebar.open { left: 0; }
-            .sidebar-header { display: flex; } /* 移动端显示侧边栏Logo */
-            .top-bar-left .logo-text { display: none; } /* 移动端隐藏顶栏Logo */
-            #user-name { display: none; } /* 移动端隐藏用户名 */
+            .sidebar-header { display: flex; } 
+            .top-bar-left .logo-text { display: none; } 
+            #user-name { display: none; } 
             .drawer-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); z-index: 98; opacity: 0; pointer-events: none; transition: var(--md-transition); }
             .drawer-overlay.show { opacity: 1; pointer-events: auto; }
             .main-workspace { margin: 0 0 0 0 !important; border-radius: 0; }
             .list-header { grid-template-columns: 1fr auto; padding: 0 16px; }
-            .list-header div:nth-child(2), .list-header div:nth-child(3) { display: none; } /* 隐藏日期和大小标题 */
+            .list-header div:nth-child(2), .list-header div:nth-child(3) { display: none; } 
             .file-row { grid-template-columns: 1fr 60px; padding: 12px 16px;}
             .file-row .cell-info { display: none; }
             .search-wrapper { width: 180px; padding: 8px 12px; }
@@ -344,7 +328,7 @@
             </div>
 
             <div class="move-tree-container" id="move-tree-container">
-                </div>
+            </div>
         </div>
     </div>
 
@@ -355,29 +339,25 @@
         const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
         let currentPath = "";
-        let currentView = "drive"; // "drive" or "starred"
+        let currentView = "drive"; 
         let rawFilesData = [];
-        let activeFocusedItem = null; // { key, isFolder }
+        let activeFocusedItem = null; 
         
         let selectedKeys = new Set();
         let lastSelectedIndex = -1;
         let currentRenderedItems = []; 
         
-        let undoStack = [];
+        // 全新基于 Action 的撤销重做状态追踪
+        let undoStack = []; // 存储 { type: 'move'|'copy'|'create', items: [{ oldKey, newKey }] }
         let redoStack = [];
 
-        // 剪贴板状态管理 (Ctrl+C, Ctrl+X, Ctrl+V)
-        let localClipboard = {
-            keys: [], // 被复制/剪切的文件Key数组
-            type: null // 'copy' 或 'cut'
-        };
+        // 剪贴板追踪
+        let clipboard = { type: null, items: [] }; // type: 'copy' | 'cut'
 
-        // 从本地存储加载星标数据 (Mock API 星标功能)
         let starredKeys = new Set(JSON.parse(localStorage.getItem('inet_starred_keys') || '[]'));
 
-        // Move dialog state
         let folderTreeData = {}; 
-        let expandedFolders = new Set([""]); // root is always expanded
+        let expandedFolders = new Set([""]); 
         let targetMoveFolder = "";
 
         async function fetchAPI(endpoint, options = {}) {
@@ -437,80 +417,76 @@
             fetchGlobalUserInfo();
         });
 
-        // 保存历史快照
-        function saveHistorySnapshot() {
-            undoStack.push(JSON.stringify(rawFilesData));
-            redoStack = []; 
-        }
-        
-        // 云端同步处理器（针对撤销、重做后状态的回滚）
-        async function syncStateToCloud(targetStateData) {
-            showSnackbar("正在与云端同步...");
+        // 基于 API Action 封装的带历史记录和真实云端同步的抽象运行层
+        async function runMutation(apiCallFunc, successMsg, actionPayload = null) {
             try {
-                // 获取当前云端最新文件列表
-                const res = await fetchAPI("/list");
-                const currentCloudData = await res.json();
-                const currentFiles = currentCloudData.files || [];
-
-                const cloudKeys = new Set(currentFiles.map(f => f.key));
-                const targetKeys = new Set(targetStateData.map(f => f.key));
-
-                // 1. 查找已被删除但需要恢复的文件
-                for (let item of targetStateData) {
-                    if (!cloudKeys.has(item.key)) {
-                        if (item.key.endsWith('/')) {
-                            // 恢复文件夹
-                            await fetchAPI(`/mkdir`, { 
-                                method: "POST", 
-                                headers: { "Content-Type": "application/json" }, 
-                                body: JSON.stringify({ key: item.key }) 
-                            });
-                        } else {
-                            // 本地上传或因缺少源物理文件，只能提示无法直接回滚，但我们尽最大可能在列表里重构空文件
-                            // 实际云盘中删除的文件可能因没有 Blob 数据而无法直接通过列表重铸。这里采用 mkdir 创建结构，或仅作同步提示。
-                            showSnackbar(`由于云盘数据已丢弃，无法通过回退物理重铸该文件，已重建其结构：${item.key.split('/').pop()}`);
-                        }
-                    }
-                }
-
-                // 2. 查找已新增但需要删除的文件
-                for (let item of currentFiles) {
-                    if (!targetKeys.has(item.key)) {
-                        await fetchAPI(`/delete?key=${encodeURIComponent(item.key)}`, { method: "DELETE" });
-                    }
+                await apiCallFunc();
+                
+                if (actionPayload) {
+                    undoStack.push(actionPayload);
+                    redoStack = []; 
                 }
                 
-                await fetchFileList();
+                if (successMsg) showSnackbar(successMsg);
+                await fetchFileList(); 
             } catch (e) {
-                showSnackbar("云端同步失败: " + e.message);
+                if (e.message !== "Unauthorized") showSnackbar("操作失败: " + e.message);
             }
         }
 
+        // 真实执行与云端同步的撤销
         async function execUndo() {
-            if(undoStack.length === 0) { showSnackbar("没有可以撤销的操作"); return; }
-            redoStack.push(JSON.stringify(rawFilesData));
-            const targetState = JSON.parse(undoStack.pop());
-            await syncStateToCloud(targetState);
-            showSnackbar("撤销成功并已同步至云端");
-        }
-
-        async function execRedo() {
-            if(redoStack.length === 0) { showSnackbar("没有可以重做的操作"); return; }
-            undoStack.push(JSON.stringify(rawFilesData));
-            const targetState = JSON.parse(redoStack.pop());
-            await syncStateToCloud(targetState);
-            showSnackbar("重做成功并已同步至云端");
-        }
-
-        async function runMutation(apiCallFunc, successMsg) {
-            saveHistorySnapshot();
+            if (undoStack.length === 0) { showSnackbar("没有可以撤销的操作"); return; }
+            const action = undoStack.pop();
+            
             try {
-                await apiCallFunc();
-                showSnackbar(successMsg);
-                await fetchFileList(); 
+                if (action.type === 'move' || action.type === 'cut') {
+                    for (const item of action.items) {
+                        await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.newKey, newKey: item.oldKey }) });
+                    }
+                } else if (action.type === 'copy') {
+                    for (const item of action.items) {
+                        await fetchAPI(`/delete?key=${encodeURIComponent(item.newKey)}`, { method: "DELETE" });
+                    }
+                } else if (action.type === 'create') {
+                    for (const item of action.items) {
+                        await fetchAPI(`/delete?key=${encodeURIComponent(item.newKey)}`, { method: "DELETE" });
+                    }
+                }
+                redoStack.push(action);
+                showSnackbar("撤销成功并已同步至云端");
+                await fetchFileList();
             } catch (e) {
-                undoStack.pop(); 
-                if (e.message !== "Unauthorized") showSnackbar("操作失败: " + e.message);
+                showSnackbar("撤销异常，云端同步失败");
+                undoStack.push(action); // 反向恢复记录
+            }
+        }
+
+        // 真实执行与云端同步的重做
+        async function execRedo() {
+            if (redoStack.length === 0) { showSnackbar("没有可以重做的操作"); return; }
+            const action = redoStack.pop();
+            
+            try {
+                if (action.type === 'move' || action.type === 'cut') {
+                    for (const item of action.items) {
+                        await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.oldKey, newKey: item.newKey }) });
+                    }
+                } else if (action.type === 'copy') {
+                    for (const item of action.items) {
+                        // 回滚复制逻辑需要依赖真实的后端 /copy
+                        await fetchAPI(`/copy`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.oldKey, newKey: item.newKey }) });
+                    }
+                } else if (action.type === 'create') {
+                    showSnackbar("文件上传或创建无法重做");
+                    return;
+                }
+                undoStack.push(action);
+                showSnackbar("重做成功并已同步至云端");
+                await fetchFileList();
+            } catch(e) {
+                showSnackbar("重做异常");
+                redoStack.push(action);
             }
         }
 
@@ -530,7 +506,7 @@
             document.getElementById("nav-starred").classList.remove("active");
             document.getElementById("nav-" + view).classList.add("active");
             selectedKeys.clear();
-            if(window.innerWidth < 900) toggleDrawer(); // close drawer on mobile after select
+            if(window.innerWidth < 900) toggleDrawer(); 
             renderWorkspace();
         }
 
@@ -540,11 +516,9 @@
                 const data = await res.json();
                 rawFilesData = data.files || [];
                 
-                // Cleanup starred keys that no longer exist
                 const allKeys = new Set(rawFilesData.map(f => f.key));
                 let starredChanged = false;
                 starredKeys.forEach(k => {
-                    // Check if file or folder exists (folder check involves trailing slash)
                     if(!allKeys.has(k) && !allKeys.has(k+'/')) {
                         starredKeys.delete(k);
                         starredChanged = true;
@@ -586,7 +560,6 @@
                 return;
             }
 
-            // Normal Drive View
             const foldersSet = new Set();
             const filesInCurrent = [];
 
@@ -631,8 +604,6 @@
         function renderStarredView(container) {
             let renderIndex = 0;
             const targetFiles = rawFilesData.filter(f => starredKeys.has(f.key) || starredKeys.has(f.key+'/'));
-            
-            // To properly render folders and files that are starred
             const uniqueStarredKeysRendered = new Set();
 
             starredKeys.forEach(sKey => {
@@ -640,8 +611,6 @@
                 const pureKey = isFolder ? sKey.substring(0, sKey.length - 1) : sKey;
                 const match = rawFilesData.find(f => f.key === sKey || f.key === pureKey);
                 if(!match && isFolder) {
-                    // It's a folder containing items, we assume it exists if it's in starred.
-                    // But to be safe, check if any rawFile starts with this folder
                     if(rawFilesData.some(f => f.key.startsWith(sKey))) {
                         const name = pureKey.split('/').pop();
                         const isSelected = selectedKeys.has(sKey);
@@ -671,7 +640,7 @@
 
         function createRowNode(name, date, size, icon, key, isFolder, index, isSelected, isStarred, showFullPath) {
             const row = document.createElement("div");
-            row.className = `file-row ripple-btn ${isSelected ? 'selected' : ''}`;
+            row.className = `file-row ${isSelected ? 'selected' : ''}`;
             row.draggable = true; 
             
             const displayPath = showFullPath ? `<div style="font-size:11px; color:var(--md-sys-color-outline); margin-top:2px;">${key}</div>` : '';
@@ -687,7 +656,7 @@
                 </div>
                 <div class="cell-info">${date}</div>
                 <div class="cell-info">${size}</div>
-                <div><button class="action-menu-btn ripple-btn" onclick="openContextMenu(event, '${key}', ${isFolder})"><span class="material-symbols-outlined">more_vert</span></button></div>
+                <div><button class="action-menu-btn" onclick="openContextMenu(event, '${key}', ${isFolder}, ${index})"><span class="material-symbols-outlined">more_vert</span></button></div>
             `;
             
             row.addEventListener("click", (e) => {
@@ -705,32 +674,42 @@
                     for(let i = start; i <= end; i++) selectedKeys.add(currentRenderedItems[i].key);
                     renderWorkspace();
                 } else {
-                    if(isFolder) {
-                        if (currentView === "starred") {
-                            // jump to drive view folder
-                            currentView = "drive";
-                            document.getElementById("nav-starred").classList.remove("active");
-                            document.getElementById("nav-drive").classList.add("active");
-                        }
-                        selectedKeys.clear();
-                        currentPath = key;
-                        renderWorkspace();
-                    } else {
-                        selectedKeys.clear();
-                        selectedKeys.add(key);
-                        lastSelectedIndex = index;
-                        renderWorkspace();
-                    }
+                    selectedKeys.clear();
+                    selectedKeys.add(key);
+                    lastSelectedIndex = index;
+                    renderWorkspace();
                 }
             });
 
+            if (isFolder) {
+                row.addEventListener("dblclick", (e) => {
+                    if (e.target.closest('.action-menu-btn')) return;
+                    if (currentView === "starred") {
+                        currentView = "drive";
+                        document.getElementById("nav-starred").classList.remove("active");
+                        document.getElementById("nav-drive").classList.add("active");
+                    }
+                    selectedKeys.clear();
+                    currentPath = key;
+                    renderWorkspace();
+                });
+            }
+
+            // 修正右键时传递 index 以支持准确选中和赋值
             row.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
-                openContextMenu(e, key, isFolder);
+                openContextMenu(e, key, isFolder, index);
             });
 
             row.addEventListener("dragstart", (e) => {
-                e.dataTransfer.setData("application/json", JSON.stringify({ key, isFolder }));
+                if (!selectedKeys.has(key)) {
+                    selectedKeys.clear();
+                    selectedKeys.add(key);
+                    lastSelectedIndex = index;
+                    renderWorkspace();
+                }
+                const itemsToMove = currentRenderedItems.filter(item => selectedKeys.has(item.key));
+                e.dataTransfer.setData("application/json", JSON.stringify({ items: itemsToMove }));
                 e.dataTransfer.effectAllowed = "move";
             });
 
@@ -742,8 +721,9 @@
                     row.classList.remove("drag-over");
                     try {
                         const source = JSON.parse(e.dataTransfer.getData("application/json"));
-                        if (source.key !== key && !key.startsWith(source.key)) {
-                            executeMoveAPI(source.key, key + source.key.split('/').filter(Boolean).pop() + (source.isFolder ? '/' : ''));
+                        const items = source.items || [];
+                        if (items.length > 0) {
+                            executeBatchMoveAPI(items, key);
                         }
                     } catch (err) {}
                 });
@@ -769,7 +749,6 @@
         }
         function jumpToPath(path) { currentPath = path; selectedKeys.clear(); renderWorkspace(); }
 
-        // 文件上传/新建
         function openUploadSelect() { document.getElementById("file-input").click(); }
         async function handleFileSelect(input) {
             let file = input.files[0];
@@ -783,10 +762,13 @@
             progFill.style.display = "block";
             setTimeout(() => { progFill.style.width = "40%"; }, 100);
 
+            // 记录上传创建 Action (可被撤销为删除)
+            let actionPayload = { type: 'create', items: [{ newKey: targetKey }] };
+
             await runMutation(async () => {
                 await fetchAPI("/upload", { method: "POST", body: data });
                 progFill.style.width = "100%";
-            }, `上传成功`);
+            }, `上传成功`, actionPayload);
             
             setTimeout(() => { progFill.style.display = "none"; progFill.style.width = "0%"; }, 500);
             input.value = "";
@@ -800,50 +782,55 @@
             const folderName = document.getElementById("new-folder-name").value.trim();
             if (!folderName) return;
             const targetFolderKey = currentPath + folderName + "/";
+            
+            let actionPayload = { type: 'create', items: [{ newKey: targetFolderKey }] };
+
             await runMutation(async () => {
                 await fetchAPI(`/mkdir`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: targetFolderKey }) });
-            }, "新建文件夹成功");
+            }, "新建文件夹成功", actionPayload);
             closeDialog('folder-dialog');
         }
 
-        // 动态右键菜单
-        function openContextMenu(event, key, isFolder) {
+        // --- 核心全局右键与剪贴板控制 ---
+        function openContextMenu(event, key, isFolder, index) {
             event.stopPropagation();
-            activeFocusedItem = { key, isFolder };
             
-            // 修复Bug：右键文件时，只选中当前文件，清除其他文件的选中状态
+            // 修复 Bug：右键时直接清除并唯一选中该项目
             selectedKeys.clear();
-            selectedKeys.add(key); 
+            selectedKeys.add(key);
+            activeFocusedItem = { key, isFolder };
+            if (index !== undefined) lastSelectedIndex = index;
             renderWorkspace();
 
             const menu = document.getElementById("action-menu");
-            menu.innerHTML = ""; // clear previous
+            menu.innerHTML = ""; 
 
             const starText = starredKeys.has(key) ? "取消星标" : "添加星标";
             const starIcon = starredKeys.has(key) ? "star" : "star_border";
 
             if (isFolder) {
-                // Folder Options: 打开文件夹, 重命名, 移动, 删除, 添加星标
                 menu.innerHTML += `<div class="menu-item ripple-btn" onclick="jumpToPath('${key}'); closeActionMenu();"><span class="material-symbols-outlined">folder_open</span>打开文件夹</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="toggleStar('${key}')"><span class="material-symbols-outlined">${starIcon}</span>${starText}</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
             } else {
-                // File Options: 在线预览(图/视频), 下载文件, 添加星标, 重命名, 移动, 删除
                 const ext = key.split('.').pop().toLowerCase();
                 const previewable = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'pdf'].includes(ext);
-                
                 if (previewable) {
                     menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerPreview()"><span class="material-symbols-outlined">visibility</span>在线预览</div>`;
                 }
                 menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="toggleStar('${key}')"><span class="material-symbols-outlined">${starIcon}</span>${starText}</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
-                menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
+            }
+            
+            // 增添了全新的复制/剪切/粘贴选项
+            menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCopy(); closeActionMenu();"><span class="material-symbols-outlined">content_copy</span>复制</div>`;
+            menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCut(); closeActionMenu();"><span class="material-symbols-outlined">content_cut</span>剪切</div>`;
+            if (clipboard.type && clipboard.items.length > 0) {
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handlePaste(); closeActionMenu();"><span class="material-symbols-outlined">content_paste</span>粘贴至当前</div>`;
             }
 
+            menu.innerHTML += `<div class="menu-item ripple-btn" onclick="toggleStar('${key}')"><span class="material-symbols-outlined">${starIcon}</span>${starText}</div>`;
+            menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>`;
+            menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
+            menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
+            
             menu.classList.add("show");
             
             let topPos = event.clientY;
@@ -856,13 +843,53 @@
         }
         function closeActionMenu() { document.getElementById("action-menu").classList.remove("show"); }
 
-        // 下载与预览
+        function handleCopy() {
+            if (selectedKeys.size === 0) return;
+            clipboard = { type: 'copy', items: currentRenderedItems.filter(i => selectedKeys.has(i.key)) };
+            showSnackbar(`已复制 ${clipboard.items.length} 个项目`);
+        }
+
+        function handleCut() {
+            if (selectedKeys.size === 0) return;
+            clipboard = { type: 'cut', items: currentRenderedItems.filter(i => selectedKeys.has(i.key)) };
+            showSnackbar(`已剪切 ${clipboard.items.length} 个项目`);
+        }
+
+        async function handlePaste() {
+            if (!clipboard.type || clipboard.items.length === 0) return;
+            const targetDir = currentPath; 
+            
+            const actionItems = [];
+            
+            await runMutation(async () => {
+                for (const item of clipboard.items) {
+                    const name = item.key.split('/').filter(Boolean).pop();
+                    const newKey = targetDir + name + (item.isFolder ? '/' : '');
+                    
+                    if (item.key === newKey || newKey.startsWith(item.key)) continue;
+
+                    if (clipboard.type === 'cut') {
+                        await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.key, newKey }) });
+                        actionItems.push({ oldKey: item.key, newKey });
+                    } else if (clipboard.type === 'copy') {
+                        // 基于网盘底层设计标准调用 /copy
+                        await fetchAPI(`/copy`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.key, newKey }) });
+                        actionItems.push({ oldKey: item.key, newKey });
+                    }
+                }
+            }, "粘贴成功", { type: clipboard.type, items: actionItems });
+            
+            if (clipboard.type === 'cut') {
+                clipboard = { type: null, items: [] }; 
+            }
+        }
+
         async function triggerPreview() {
             try {
                 const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
                 const data = await res.json();
                 if (!data.success || !data.url) throw new Error("获取地址失败");
-                window.open(data.url, '_blank'); // Open in new tab
+                window.open(data.url, '_blank'); 
             } catch (e) {
                 showSnackbar("预览失败");
             }
@@ -875,7 +902,6 @@
                 const data = await res.json();
                 if (!data.success || !data.url) throw new Error("获取地址失败");
                 
-                // Force Download approach (Fetching blob locally to ensure download rather than preview)
                 showSnackbar("正在下载...");
                 const filename = activeFocusedItem.key.split('/').pop();
                 try {
@@ -890,7 +916,6 @@
                     a.remove();
                     URL.revokeObjectURL(blobUrl);
                 } catch(e) {
-                    // Fallback to open if CORS blocks fetch
                     const a = document.createElement("a");
                     a.href = data.url;
                     a.download = filename;
@@ -906,7 +931,6 @@
             closeActionMenu();
         }
 
-        // 重命名
         function openRenameDialog() {
             closeActionMenu();
             const name = activeFocusedItem.key.split('/').filter(Boolean).pop();
@@ -928,14 +952,17 @@
             
             let newKey = dirPath + newName + (activeFocusedItem.isFolder ? "/" : "");
             
-            // update starred if necessary
             if(starredKeys.has(oldKey)) {
                 starredKeys.delete(oldKey);
                 starredKeys.add(newKey);
                 saveStarredKeys();
             }
 
-            await executeMoveAPI(oldKey, newKey);
+            let actionPayload = { type: 'move', items: [{ oldKey, newKey }] };
+            await runMutation(async () => {
+                await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey, newKey }) });
+            }, "操作成功", actionPayload);
+
             closeDialog("rename-dialog");
         }
 
@@ -945,13 +972,13 @@
                 starredKeys.delete(targetKey);
                 saveStarredKeys();
             }
+            // 删除通常不可撤销，所以不附加 Action Payload
             await runMutation(async () => {
                 await fetchAPI(`/delete?key=${encodeURIComponent(targetKey)}`, { method: "DELETE" });
             }, "删除成功");
             closeActionMenu();
         }
 
-        // --- 移动文件 (全新苹果风+MD3树形UI) ---
         function parseFolderStructure() {
             const tree = { name: "我的云盘", key: "", children: {} };
             rawFilesData.forEach(item => {
@@ -974,7 +1001,6 @@
         }
 
         function renderTreeUI(node, depth, container) {
-            // Cannot move into itself or its children
             if (activeFocusedItem.isFolder && node.key.startsWith(activeFocusedItem.key)) return;
 
             const isExpanded = expandedFolders.has(node.key);
@@ -984,17 +1010,14 @@
             const row = document.createElement("div");
             row.className = `tree-node-row ripple-btn ${isSelected ? 'selected' : ''}`;
             
-            // Indentation
             const indentSpace = document.createElement("div");
             indentSpace.className = "tree-indent";
             indentSpace.style.width = `${depth * 24 + 16}px`;
             
-            // Icon
             const icon = document.createElement("span");
             icon.className = "material-symbols-outlined tree-icon";
             icon.innerText = "folder";
             
-            // Name
             const nameSpan = document.createElement("span");
             nameSpan.className = "tree-name";
             nameSpan.innerText = node.name;
@@ -1003,13 +1026,11 @@
             row.appendChild(icon);
             row.appendChild(nameSpan);
 
-            // Chevron
             if(hasChildren) {
                 const chevron = document.createElement("span");
                 chevron.className = `material-symbols-outlined tree-chevron ${isExpanded ? 'expanded' : ''}`;
                 chevron.innerText = "chevron_right";
                 
-                // Clicking Chevron toggles expand/collapse
                 chevron.onclick = (e) => {
                     e.stopPropagation();
                     if(isExpanded) expandedFolders.delete(node.key);
@@ -1019,7 +1040,6 @@
                 row.appendChild(chevron);
             }
 
-            // Clicking row selects target
             row.onclick = () => {
                 targetMoveFolder = node.key;
                 updateMoveSubtitle();
@@ -1051,9 +1071,8 @@
             closeActionMenu();
             folderTreeData = parseFolderStructure();
             targetMoveFolder = "";
-            expandedFolders = new Set([""]); // Default open root
+            expandedFolders = new Set([""]); 
 
-            // Set Preview
             const isF = activeFocusedItem.isFolder;
             const name = isF ? activeFocusedItem.key.split('/').filter(Boolean).pop() : activeFocusedItem.key.split('/').pop();
             document.getElementById("move-preview-icon").innerText = isF ? "folder" : "description";
@@ -1075,17 +1094,39 @@
                 saveStarredKeys();
             }
 
-            await executeMoveAPI(oldKey, newKey);
+            let actionPayload = { type: 'move', items: [{ oldKey, newKey }] };
+            await runMutation(async () => {
+                await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey, newKey }) });
+            }, "操作成功", actionPayload);
+
             closeDialog('move-dialog');
         }
 
-        async function executeMoveAPI(oldKey, newKey) {
+        async function executeBatchMoveAPI(items, targetFolderKey) {
+            const actionItems = [];
             await runMutation(async () => {
-                await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey, newKey }) });
-            }, "操作成功");
+                for (const item of items) {
+                    if (item.key !== targetFolderKey && !targetFolderKey.startsWith(item.key)) {
+                        const name = item.key.split('/').filter(Boolean).pop();
+                        const newKey = targetFolderKey + name + (item.isFolder ? '/' : '');
+                        
+                        if(starredKeys.has(item.key)) {
+                            starredKeys.delete(item.key);
+                            starredKeys.add(newKey);
+                        }
+                        
+                        await fetchAPI(`/move`, { 
+                            method: "POST", 
+                            headers: { "Content-Type": "application/json" }, 
+                            body: JSON.stringify({ oldKey: item.key, newKey }) 
+                        });
+                        actionItems.push({ oldKey: item.key, newKey });
+                    }
+                }
+                saveStarredKeys();
+            }, "操作成功", { type: 'move', items: actionItems });
         }
 
-        // 高级搜索 (移除日期，保留名称和格式分词)
         function handleAdvancedSearch() {
             const queryStr = document.getElementById("search-input").value.toLowerCase().trim();
             const dropdown = document.getElementById("search-dropdown");
@@ -1102,7 +1143,6 @@
             const results = rawFilesData.filter(file => {
                 const name = file.key.toLowerCase();
                 const ext = name.split('.').pop();
-                // 必须包含所有关键词 (只匹配名称或格式)
                 return queries.every(q => name.includes(q) || ext.includes(q));
             });
 
@@ -1136,84 +1176,6 @@
             });
         }
 
-        // --- 键盘快捷键复制粘贴逻辑 ---
-        function handleKeyboardCopyCut(type) {
-            if (selectedKeys.size === 0) {
-                showSnackbar("未选中任何文件");
-                return;
-            }
-            localClipboard.keys = Array.from(selectedKeys);
-            localClipboard.type = type;
-            showSnackbar(type === 'copy' ? `已复制 ${selectedKeys.size} 项到剪贴板` : `已剪切 ${selectedKeys.size} 项到剪贴板`);
-        }
-
-        async function handleKeyboardPaste() {
-            if (localClipboard.keys.length === 0) {
-                showSnackbar("剪贴板为空");
-                return;
-            }
-
-            const isCut = localClipboard.type === 'cut';
-            const actionWord = isCut ? "移动" : "复制（新建）";
-            showSnackbar(`正在${actionWord}文件...`);
-
-            await runMutation(async () => {
-                for (let sourceKey of localClipboard.keys) {
-                    const isF = sourceKey.endsWith('/');
-                    const baseName = isF ? sourceKey.split('/').filter(Boolean).pop() + "/" : sourceKey.split('/').pop();
-                    const newKey = currentPath + baseName;
-
-                    if (sourceKey === newKey) {
-                        continue; // 同目录下无法粘贴自身
-                    }
-
-                    if (isCut) {
-                        // 剪切：调用移动 API
-                        await fetchAPI(`/move`, { 
-                            method: "POST", 
-                            headers: { "Content-Type": "application/json" }, 
-                            body: JSON.stringify({ oldKey: sourceKey, newKey }) 
-                        });
-                        // 剪切状态下，如果星标包含，则更新星标
-                        if(starredKeys.has(sourceKey)) {
-                            starredKeys.delete(sourceKey);
-                            starredKeys.add(newKey);
-                            saveStarredKeys();
-                        }
-                    } else {
-                        // 复制：云端无独立 copy API，对于文件夹调用 mkdir，对于文件调用 get下载并用 upload 上传
-                        if (isF) {
-                            await fetchAPI(`/mkdir`, { 
-                                method: "POST", 
-                                headers: { "Content-Type": "application/json" }, 
-                                body: JSON.stringify({ key: newKey }) 
-                            });
-                        } else {
-                            const res = await fetchAPI(`/download?key=${encodeURIComponent(sourceKey)}`);
-                            const data = await res.json();
-                            if (data.success && data.url) {
-                                const downloadRes = await fetch(data.url);
-                                const fileBlob = await downloadRes.blob();
-                                const fileObj = new File([fileBlob], baseName);
-                                let pasteFormData = new FormData();
-                                pasteFormData.append("file", fileObj);
-                                pasteFormData.append("key", newKey);
-                                await fetchAPI("/upload", { method: "POST", body: pasteFormData });
-                            }
-                        }
-                    }
-                }
-                
-                // 剪切完毕后清空剪贴板并重置选中状态
-                if (isCut) {
-                    localClipboard.keys = [];
-                    localClipboard.type = null;
-                }
-                selectedKeys.clear();
-            }, `${actionWord}完成`);
-        }
-
-        // --- 全局交互与特效 ---
         function openDialog(id) { document.getElementById(id).classList.add("show"); }
         function closeDialog(id) { document.getElementById(id).classList.remove("show"); }
         function showSnackbar(msg) {
@@ -1262,20 +1224,16 @@
                 }
             });
 
+            // 监听键盘事件增加剪贴板控制
             document.addEventListener("keydown", (e) => {
-                const activeTag = document.activeElement.tagName.toLowerCase();
-                // 输入框聚焦时不触发全局快捷键
-                if (activeTag === 'input' || activeTag === 'textarea') return;
+                // 如果用户正在输入框中打字，则屏蔽快捷键避免冲突
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-                const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-                const modifier = isMac ? e.metaKey : e.ctrlKey;
-
-                if (modifier && e.key.toLowerCase() === 'z') { e.preventDefault(); execUndo(); }
-                if (modifier && e.key.toLowerCase() === 'y') { e.preventDefault(); execRedo(); }
-                if (modifier && e.key.toLowerCase() === 'c') { e.preventDefault(); handleKeyboardCopyCut('copy'); }
-                if (modifier && e.key.toLowerCase() === 'x') { e.preventDefault(); handleKeyboardCopyCut('cut'); }
-                if (modifier && e.key.toLowerCase() === 'v') { e.preventDefault(); handleKeyboardPaste(); }
-                
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); execUndo(); }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); execRedo(); }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') { e.preventDefault(); handleCopy(); }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') { e.preventDefault(); handleCut(); }
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') { e.preventDefault(); handlePaste(); }
                 if (e.altKey && e.key.toLowerCase() === 'a') {
                     e.preventDefault();
                     currentRenderedItems.forEach(item => selectedKeys.add(item.key));
