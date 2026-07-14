@@ -1,4 +1,4 @@
-const API = "https://api.inets.de5.net/api"; // 注意：此处直接指定到 /api
+const API = "https://api.inets.de5.net/api";
 const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
 let currentPath = "";
@@ -6,7 +6,6 @@ let rawFilesData = [];
 let activeFocusedItem = null;
 let targetMoveFolder = "";
 
-// [核心修复]：跨域 Fetch 包装器，自动带上 Token
 async function fetchAPI(endpoint, options = {}) {
     const token = localStorage.getItem("auth_token") || "";
 
@@ -21,7 +20,6 @@ async function fetchAPI(endpoint, options = {}) {
     });
 
     if (response.status === 401) {
-        // 未登录，引导跳转到中央登录系统，并携带回跳地址
         window.location.href = `${LOGIN_SYSTEM}/api/sso-check?from=${encodeURIComponent(window.location.href)}`;
         throw new Error("Unauthorized");
     }
@@ -30,12 +28,10 @@ async function fetchAPI(endpoint, options = {}) {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-    // 处理从登录系统跳转回来的 sso_token 
     const urlParams = new URLSearchParams(window.location.search);
     const ssoToken = urlParams.get("sso_token");
     if (ssoToken) {
         localStorage.setItem("auth_token", ssoToken);
-        // 清理地址栏
         const cleanUrl = new URL(window.location.href);
         cleanUrl.searchParams.delete("sso_token");
         window.history.replaceState({}, document.title, cleanUrl.toString());
@@ -45,7 +41,6 @@ window.addEventListener("DOMContentLoaded", () => {
     fetchFileList();
 });
 
-// 1. 获取文件列表
 async function fetchFileList() {
     try {
         const res = await fetchAPI("/list");
@@ -59,7 +54,6 @@ async function fetchFileList() {
     }
 }
 
-// 2. 渲染工作区
 function renderWorkspace() {
     renderBreadcrumbs();
     const container = document.getElementById("file-rows-container");
@@ -83,7 +77,7 @@ function renderWorkspace() {
         }
     });
 
-    // 渲染文件夹
+    // 渲染文件夹 (匹配 4 列网格)
     foldersSet.forEach(folderName => {
         const row = document.createElement("div");
         row.className = "file-row";
@@ -92,8 +86,9 @@ function renderWorkspace() {
                 <span class="material-symbols-outlined cell-icon icon-folder">folder</span>
                 <span>${folderName}</span>
             </div>
-            <div class="cell-info">-</div>
             <div class="cell-info">文件夹</div>
+            <div class="cell-info">--</div>
+            <div class="cell-info">--</div>
             <div>
                 <button class="action-menu-btn" onclick="openActionMenu(event, '${currentPath}${folderName}/', true)">
                     <span class="material-symbols-outlined">more_vert</span>
@@ -108,9 +103,11 @@ function renderWorkspace() {
         container.appendChild(row);
     });
 
-    // 渲染文件
+    // 渲染文件 (匹配 4 列网格)
     filesInCurrent.forEach(file => {
         const displayName = file.key.substring(currentPath.length);
+        const fileExt = displayName.split('.').pop().toUpperCase(); // 简单提取扩展名作为类型
+        
         const row = document.createElement("div");
         row.className = "file-row";
         row.innerHTML = `
@@ -118,8 +115,9 @@ function renderWorkspace() {
                 <span class="material-symbols-outlined cell-icon icon-file">description</span>
                 <span>${displayName}</span>
             </div>
-            <div class="cell-info">${file.uploaded ? new Date(file.uploaded).toLocaleDateString() : "-"}</div>
+            <div class="cell-info">${fileExt} 文件</div>
             <div class="cell-info">${formatBytes(file.size)}</div>
+            <div class="cell-info">${file.uploaded ? new Date(file.uploaded).toLocaleDateString() : "-"}</div>
             <div>
                 <button class="action-menu-btn" onclick="openActionMenu(event, '${file.key}', false)">
                     <span class="material-symbols-outlined">more_vert</span>
@@ -130,7 +128,7 @@ function renderWorkspace() {
     });
 
     if (foldersSet.size === 0 && filesInCurrent.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">此文件夹为空，拖拽或点击新建上传文件</div>`;
+        container.innerHTML = `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline); grid-column: span 5;">此文件夹为空，拖拽或点击新建上传文件</div>`;
     }
 }
 
@@ -152,7 +150,6 @@ function renderBreadcrumbs() {
 
 function jumpToPath(path) { currentPath = path; renderWorkspace(); }
 
-// 3. 上传文件
 function openUploadSelect() { document.getElementById("file-input").click(); }
 
 async function handleFileSelect(input) {
@@ -172,7 +169,7 @@ async function handleFileSelect(input) {
         await fetchAPI("/upload", { method: "POST", body: data });
         progFill.style.width = "100%";
         showSnackbar(`上传成功`);
-        await fetchFileList(); // 刷新数据
+        await fetchFileList(); 
     } catch (err) {
         showSnackbar("上传失败");
     } finally {
@@ -181,7 +178,6 @@ async function handleFileSelect(input) {
     }
 }
 
-// 4. 新建文件夹 [已修复]
 function openCreateFolderDialog() {
     document.getElementById("new-folder-name").value = "";
     openDialog('folder-dialog');
@@ -207,65 +203,68 @@ async function triggerCreateFolder() {
     closeDialog('folder-dialog');
 }
 
-// 5. 下载文件
-// 改为获取 R2 CDN 下载链接，不经过 Worker 转发
-async function triggerDownload() {
+// 在线预览功能 (通过新标签页打开URL实现预览效果)
+async function triggerPreview() {
+    // 如果是文件夹，则直接打开文件夹
+    if (activeFocusedItem.isFolder) {
+        const folderName = activeFocusedItem.key.split('/').filter(Boolean).pop();
+        currentPath += folderName + "/";
+        renderWorkspace();
+        closeActionMenu();
+        return;
+    }
 
+    try {
+        const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
+        const data = await res.json();
+
+        if (!data.success || !data.url) {
+            throw new Error(data.message || "获取预览地址失败");
+        }
+        
+        // 使用新标签页打开实现预览
+        window.open(data.url, '_blank');
+        showSnackbar("正在打开在线预览...");
+    } catch (e) {
+        console.error(e);
+        showSnackbar("预览失败");
+    }
+    closeActionMenu();
+}
+
+// 直接下载文件
+async function triggerDownload() {
     if (activeFocusedItem.isFolder) {
         showSnackbar("暂不支持下载整个文件夹");
         return;
     }
-
-
     try {
-
-        // 请求 Worker 获取下载地址
-        const res = await fetchAPI(
-            `/download?key=${encodeURIComponent(activeFocusedItem.key)}`
-        );
-
-
+        const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
         const data = await res.json();
 
-
         if (!data.success || !data.url) {
-            throw new Error(
-                data.message || "获取下载地址失败"
-            );
+            throw new Error(data.message || "获取下载地址失败");
         }
 
-
-        /*
-          直接跳转到 R2 CDN 地址
-
-          浏览器直接连接：
-          file.inets.de5.net
-
-          不经过 Worker
-        */
         const a = document.createElement("a");
         a.href = data.url;
+        // 尝试附加 download 属性触发浏览器强制下载行为
+        const fileName = activeFocusedItem.key.substring(activeFocusedItem.key.lastIndexOf("/") + 1);
+        a.download = fileName; 
         a.target = "_blank";
+        
         document.body.appendChild(a);
         a.click();
         a.remove();
-
-
         showSnackbar("下载开始");
-
-
     } catch (e) {
-
         console.error(e);
         showSnackbar("下载失败");
-
     }
-
-
     closeActionMenu();
 }
 
-// 6. 删除文件 [已修复]
+// 删除文件
 async function triggerDelete() {
     const targetKey = activeFocusedItem.key;
     try {
@@ -278,7 +277,6 @@ async function triggerDelete() {
     closeActionMenu();
 }
 
-// 7. 移动文件
 function openMoveDialog() {
     closeActionMenu();
     const box = document.getElementById("folder-tree-box");
@@ -335,7 +333,6 @@ async function triggerMoveFile() {
     closeDialog('move-dialog');
 }
 
-// 8. 搜索
 function handleSearch() {
     const query = document.getElementById("search-input").value.toLowerCase().trim();
     if (!query) { renderWorkspace(); return; }
@@ -354,6 +351,7 @@ function handleSearch() {
                 </div>
                 <div class="cell-info">全局搜索</div>
                 <div class="cell-info">${formatBytes(file.size)}</div>
+                <div class="cell-info">--</div>
                 <div>
                     <button class="action-menu-btn" onclick="openActionMenu(event, '${file.key}', false)">
                         <span class="material-symbols-outlined">more_vert</span>
@@ -365,14 +363,46 @@ function handleSearch() {
     });
 }
 
+// 占位功能提示
+function triggerPlaceholder(actionName) {
+    showSnackbar(`"${actionName}" 功能正在开发中...`);
+    closeActionMenu();
+}
+
 // 交互组件函数
 function openActionMenu(event, key, isFolder) {
     event.stopPropagation();
     activeFocusedItem = { key, isFolder };
     const menu = document.getElementById("action-menu");
+
+    // 根据目标类型(文件/文件夹)动态调整菜单展示
+    const previewText = document.getElementById("text-preview");
+    const previewIcon = document.getElementById("icon-preview");
+    const downloadItem = document.getElementById("menu-item-download");
+
+    if (isFolder) {
+        previewText.innerText = "打开";
+        previewIcon.innerText = "folder_open";
+        downloadItem.style.display = "none"; // 文件夹隐藏下载
+    } else {
+        previewText.innerText = "在线预览";
+        previewIcon.innerText = "visibility";
+        downloadItem.style.display = "flex"; // 文件展示下载
+    }
+
     menu.classList.add("show");
-    menu.style.top = `${event.clientY}px`;
-    menu.style.left = `${event.clientX - 160}px`;
+    
+    // 防止菜单溢出屏幕底部
+    let top = event.clientY;
+    let left = event.clientX - 200;
+    
+    // 简单边界处理
+    if(top + menu.offsetHeight > window.innerHeight) {
+        top = window.innerHeight - menu.offsetHeight - 16; 
+    }
+
+    menu.style.top = `${top}px`;
+    menu.style.left = `${left}px`;
 }
 
 function closeActionMenu() { document.getElementById("action-menu").classList.remove("show"); }
@@ -398,4 +428,3 @@ function formatBytes(bytes, decimals = 2) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
-
