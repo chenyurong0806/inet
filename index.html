@@ -1709,7 +1709,6 @@
         /**
          * 合并分片（调用后端 merge 接口）
          */
-        await new Promise(r => setTimeout(r, 2000));
         async function mergeChunksAPI(targetKey, uploadId, totalChunks) {
             const response = await fetchAPI("/upload/merge", {
                 method: "POST",
