@@ -1660,8 +1660,8 @@
             let nextIndex = 0;
             let firstError = null;
             let aborted = false;
+            const parts = []; // ★ 新增：用于收集每个成功分片的 partNumber 和 etag
 
-            // 超时保护：整个上传最多 30 分钟
             const globalTimeout = setTimeout(() => {
                 if (!aborted) {
                     firstError = new Error("上传超时（超过30分钟）");
@@ -1676,14 +1676,18 @@
                 while (nextIndex < totalChunks && !aborted) {
                     const idx = nextIndex++;
                     try {
-                        await uploadChunkWithRetry(file, idx, chunks[idx], totalChunks, uploadId, targetKey, signal);
+                        const res = await uploadChunkWithRetry(file, idx, chunks[idx], totalChunks, uploadId, targetKey, signal);
+                        const data = await res.json();
+
+                        // ★ 核心修复：记录分片结果用于最后的合并
+                        parts.push({ partNumber: data.partNumber, etag: data.etag });
+
                         completedCount++;
                         onProgress(completedCount, totalChunks);
                     } catch (err) {
                         if (!aborted) {
                             aborted = true;
                             firstError = err;
-                            // 取消其他进行中的请求
                             if (activeUploadAborter) activeUploadAborter.abort();
                         }
                         break;
@@ -1691,7 +1695,6 @@
                 }
             }
 
-            // 启动并发 workers
             const concurrency = Math.min(MAX_CONCURRENT_CHUNKS, totalChunks);
             const workers = [];
             for (let i = 0; i < concurrency; i++) {
@@ -1704,44 +1707,44 @@
             if (firstError) {
                 throw firstError;
             }
+
+            return parts; // ★ 核心修复：返回数组供外部调用
         }
 
         /**
          * 合并分片（调用后端 merge 接口）
          */
         async function uploadFileInChunks(file, targetKey) {
+            isUploading = true; // ★ 修复：加锁，防止多重点击
             const abortController = new AbortController();
             activeUploadAborter = abortController;
 
             const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
 
-            // 1. 初始化 multipart upload
-            const initRes = await fetchAPI("/upload/init", {
-                method: "POST",
-                body: JSON.stringify({ key: targetKey })
-            });
-            const { uploadId } = await initRes.json();
-
-            const parts = [];
-
             try {
+                // 1. 初始化 multipart upload，并发送真实的 contentType
+                const initRes = await fetchAPI("/upload/init", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        key: targetKey,
+                        contentType: file.type || "application/octet-stream"
+                    })
+                });
+                const { uploadId } = await initRes.json();
+
+                // 2. 准备所有分片
+                const chunks = [];
                 for (let i = 0; i < totalChunks; i++) {
-                    const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-                    const form = new FormData();
-                    form.append("file", chunk, file.name + ".part" + i);
-                    form.append("key", targetKey);
-                    form.append("chunkIndex", i);
-                    form.append("totalChunks", totalChunks);
-                    form.append("uploadId", uploadId);
-
-                    const res = await fetchAPI("/upload/chunk", { method: "POST", body: form });
-                    const data = await res.json();
-                    parts.push({ partNumber: data.partNumber, etag: data.etag });
-
-                    updateUploadProgress(i + 1, totalChunks);
+                    chunks.push(file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE));
                 }
 
-                // 2. 合并
+                // 3. ★ 核心修复：调用并发上传并拿到结果
+                const parts = await uploadAllChunksConcurrently(
+                    file, chunks, totalChunks, uploadId, targetKey, abortController.signal,
+                    (completed, total) => updateUploadProgress(completed, total)
+                );
+
+                // 4. 合并分片
                 await fetchAPI("/upload/merge", {
                     method: "POST",
                     body: JSON.stringify({ key: targetKey, uploadId, parts })
@@ -1750,15 +1753,25 @@
                 showSnackbar("上传成功");
                 await fetchFileList();
             } catch (err) {
-                // 失败时尝试 abort
-                try {
-                    await fetchAPI("/upload/abort", {
-                        method: "POST",
-                        body: JSON.stringify({ key: targetKey, uploadId })
-                    });
-                } catch { }
-                throw err;
+                // 拦截如果是主动取消则友好提示
+                if (err.name === 'AbortError') {
+                    showSnackbar("上传已取消");
+                } else {
+                    showSnackbar("上传失败: " + err.message);
+                }
+
+                // 失败时尝试通知后端 abort
+                if (activeUploadAborter) {
+                    try {
+                        await fetchAPI("/upload/abort", {
+                            method: "POST",
+                            body: JSON.stringify({ key: targetKey, uploadId: activeUploadAborter.uploadId })
+                        });
+                    } catch (e) { }
+                }
             } finally {
+                isUploading = false; // ★ 修复：解锁
+                activeUploadAborter = null;
                 hideUploadProgress();
             }
         }
