@@ -1566,7 +1566,7 @@
                 } else {
                     const uploadedSize = completed * CHUNK_SIZE;
                     progText.innerText =
-                        `正在上传分片 ${completed}/${total} (${percentage}%) — ${formatBytes(Math.min(uploadedSize, total * CHUNK_SIZE))}`;
+                        `正在上传 ${completed}/${total} (${percentage}%) — ${formatBytes(Math.min(uploadedSize, total * CHUNK_SIZE))}`;
                 }
             }
         }
@@ -1711,7 +1711,7 @@
                 }),
             });
             if (!response.ok) {
-                throw new Error(`合并分片失败 (HTTP ${response.status})`);
+                throw new Error(`合并失败 (HTTP ${response.status})`);
             }
             return response;
         }
@@ -1755,7 +1755,7 @@
                 );
 
                 // 阶段二：合并分片（在 runMutation 中执行，以便记录撤销栈）
-                updateUploadProgress(totalChunks, totalChunks, "正在合并分片...");
+                updateUploadProgress(totalChunks, totalChunks, "正在合并...");
 
                 const actionPayload = { type: 'create', items: [{ newKey: targetKey }] };
 
@@ -1896,17 +1896,12 @@
         }
 
         async function triggerCopyShareLink() {
-            try {
-                const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
-                const data = await res.json();
-                if (!data.success || !data.url) throw new Error("获取链接失败");
-
-                // 将链接写入剪贴板
-                await navigator.clipboard.writeText(data.url);
+            const url = `https://api.inets.de5.net/api/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
+            navigator.clipboard.writeText(url).then(() => {
                 showSnackbar("共享链接已复制到剪贴板");
-            } catch (e) {
-                showSnackbar("获取共享链接失败");
-            }
+            }).catch(() => {
+                showSnackbar("复制失败，请手动复制链接");
+            });
             closeActionMenu();
         }
 
@@ -1964,42 +1959,20 @@
 
         // ==================== 预览与下载 ====================
         async function triggerPreview() {
-            try {
-                const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
-                const data = await res.json();
-                if (!data.success || !data.url) throw new Error("获取地址失败");
-
-                const a = document.createElement("a");
-                a.href = data.url;
-                a.target = "_blank";
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-            } catch (e) {
-                showSnackbar("预览失败");
-            }
+            const url = `https://api.inets.de5.net/api/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
+            window.open(url, "_blank");
             closeActionMenu();
         }
 
         async function triggerDownload() {
-            try {
-                const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
-                const data = await res.json();
-                if (!data.success || !data.url) throw new Error("获取地址失败");
-
-                showSnackbar("正在下载...");
-
-                const a = document.createElement("a");
-                a.href = data.url;
-                a.download = "";
-                a.style.display = "none";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-            } catch (e) {
-                showSnackbar("下载失败");
-            }
+            const url = `https://api.inets.de5.net/api/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "_blank";               // 强制浏览器下载，而非导航
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
             closeActionMenu();
         }
 
