@@ -1071,6 +1071,12 @@
         async function fetchAPI(endpoint, options = {}) {
             const token = localStorage.getItem("auth_token") || "";
             const headers = { ...(options.headers || {}), "Authorization": `Bearer ${token}` };
+
+            // ★ 自动补全 Content-Type，确保 Worker 能正确解析 JSON body
+            if (options.body && typeof options.body === 'string' && !headers['Content-Type']) {
+                headers['Content-Type'] = 'application/json';
+            }
+
             const response = await fetch(API + endpoint, { ...options, headers });
             if (response.status === 401) {
                 localStorage.removeItem("auth_token");
@@ -1727,17 +1733,10 @@
             try {
                 for (let i = 0; i < totalChunks; i++) {
                     const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-                    const form = new FormData();
-                    form.append("file", chunk, file.name + ".part" + i);
-                    form.append("key", targetKey);
-                    form.append("chunkIndex", i);
-                    form.append("totalChunks", totalChunks);
-                    form.append("uploadId", uploadId);
-
-                    const res = await fetchAPI("/upload/chunk", { method: "POST", body: form });
+                    // 不再手动拼 formData，而是交给 uploadChunkWithRetry 处理（它内部会构建）
+                    const res = await uploadChunkWithRetry(file, i, chunk, totalChunks, uploadId, targetKey, abortController.signal);
                     const data = await res.json();
                     parts.push({ partNumber: data.partNumber, etag: data.etag });
-
                     updateUploadProgress(i + 1, totalChunks);
                 }
 
