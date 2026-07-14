@@ -167,6 +167,7 @@
             .sidebar-header { display: flex; } 
             .top-bar-left .logo-text { display: none; } 
             #user-name { display: none; } 
+            .user-profile { padding: 4px; } /* 修复头像右侧多余留白 */
             .drawer-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); z-index: 98; opacity: 0; pointer-events: none; transition: var(--md-transition); }
             .drawer-overlay.show { opacity: 1; pointer-events: auto; }
             .main-workspace { margin: 0 0 0 0 !important; border-radius: 0; }
@@ -247,6 +248,10 @@
                     <span class="material-symbols-outlined">star</span>
                     <span>已加星标</span>
                 </div>
+                <div class="nav-item ripple-btn" onclick="switchView('trash')" id="nav-trash">
+                    <span class="material-symbols-outlined">delete</span>
+                    <span>最近删除</span>
+                </div>
             </div>
         </aside>
 
@@ -314,11 +319,11 @@
     <div class="dialog-overlay" id="move-dialog">
         <div class="dialog-card">
             <div class="move-dialog-header">
-                <button class="btn-text ripple-btn" onclick="closeDialog('move-dialog')">Cancel</button>
-                <button class="btn-text ripple-btn submit" onclick="triggerMoveFile()">Move</button>
+                <button class="btn-text ripple-btn" onclick="closeDialog('move-dialog')">取消</button>
+                <button class="btn-text ripple-btn submit" onclick="triggerMoveFile()">移动</button>
             </div>
             
-            <div class="move-subtitle" id="move-subtitle-text">Item will be moved to "iCloud Drive"</div>
+            <div class="move-subtitle" id="move-subtitle-text">项目将被移动到 "我的云盘"</div>
             
             <div class="move-item-preview">
                 <div class="move-item-icon-box">
@@ -347,12 +352,10 @@
         let lastSelectedIndex = -1;
         let currentRenderedItems = []; 
         
-        // 全新基于 Action 的撤销重做状态追踪
-        let undoStack = []; // 存储 { type: 'move'|'copy'|'create', items: [{ oldKey, newKey }] }
+        let undoStack = []; 
         let redoStack = [];
 
-        // 剪贴板追踪
-        let clipboard = { type: null, items: [] }; // type: 'copy' | 'cut'
+        let clipboard = { type: null, items: [] }; 
 
         let starredKeys = new Set(JSON.parse(localStorage.getItem('inet_starred_keys') || '[]'));
 
@@ -417,7 +420,6 @@
             fetchGlobalUserInfo();
         });
 
-        // 基于 API Action 封装的带历史记录和真实云端同步的抽象运行层
         async function runMutation(apiCallFunc, successMsg, actionPayload = null) {
             try {
                 await apiCallFunc();
@@ -434,7 +436,6 @@
             }
         }
 
-        // 真实执行与云端同步的撤销
         async function execUndo() {
             if (undoStack.length === 0) { showSnackbar("没有可以撤销的操作"); return; }
             const action = undoStack.pop();
@@ -458,11 +459,10 @@
                 await fetchFileList();
             } catch (e) {
                 showSnackbar("撤销异常，云端同步失败");
-                undoStack.push(action); // 反向恢复记录
+                undoStack.push(action); 
             }
         }
 
-        // 真实执行与云端同步的重做
         async function execRedo() {
             if (redoStack.length === 0) { showSnackbar("没有可以重做的操作"); return; }
             const action = redoStack.pop();
@@ -474,7 +474,6 @@
                     }
                 } else if (action.type === 'copy') {
                     for (const item of action.items) {
-                        // 回滚复制逻辑需要依赖真实的后端 /copy
                         await fetchAPI(`/copy`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.oldKey, newKey: item.newKey }) });
                     }
                 } else if (action.type === 'create') {
@@ -504,6 +503,7 @@
             currentView = view;
             document.getElementById("nav-drive").classList.remove("active");
             document.getElementById("nav-starred").classList.remove("active");
+            document.getElementById("nav-trash").classList.remove("active");
             document.getElementById("nav-" + view).classList.add("active");
             selectedKeys.clear();
             if(window.innerWidth < 900) toggleDrawer(); 
@@ -559,12 +559,18 @@
                 renderStarredView(container);
                 return;
             }
+            if (currentView === "trash") {
+                renderTrashView(container);
+                return;
+            }
 
             const foldersSet = new Set();
             const filesInCurrent = [];
 
             rawFilesData.forEach(item => {
                 const key = item.key;
+                if (key.startsWith('.trash/')) return; // 在正常视图中屏蔽隐藏回收站目录
+                
                 if (key.startsWith(currentPath)) {
                     const relativeKey = key.substring(currentPath.length);
                     if (!relativeKey) return;
@@ -603,10 +609,11 @@
 
         function renderStarredView(container) {
             let renderIndex = 0;
-            const targetFiles = rawFilesData.filter(f => starredKeys.has(f.key) || starredKeys.has(f.key+'/'));
             const uniqueStarredKeysRendered = new Set();
 
             starredKeys.forEach(sKey => {
+                if (sKey.startsWith('.trash/')) return;
+                
                 const isFolder = sKey.endsWith('/');
                 const pureKey = isFolder ? sKey.substring(0, sKey.length - 1) : sKey;
                 const match = rawFilesData.find(f => f.key === sKey || f.key === pureKey);
@@ -635,6 +642,27 @@
 
             if (currentRenderedItems.length === 0) {
                 container.innerHTML = `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">暂无星标文件</div>`;
+            }
+        }
+
+        function renderTrashView(container) {
+            let renderIndex = 0;
+            const targetFiles = rawFilesData.filter(f => f.key.startsWith('.trash/'));
+            
+            targetFiles.forEach(file => {
+                const isF = file.key.endsWith('/');
+                const name = isF ? file.key.split('/').filter(Boolean).pop() : file.key.split('/').pop();
+                const isSelected = selectedKeys.has(file.key);
+                const dateStr = file.uploaded ? new Date(file.uploaded).toLocaleDateString() : "-";
+                // 通过 showFullPath 显示原始删除路径信息
+                const row = createRowNode(name, dateStr, isF ? "文件夹" : formatBytes(file.size), isF ? "folder" : "description", file.key, isF, renderIndex, isSelected, false, true);
+                currentRenderedItems.push({ key: file.key, isFolder: isF, index: renderIndex });
+                container.appendChild(row);
+                renderIndex++;
+            });
+
+            if (currentRenderedItems.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">回收站为空</div>`;
             }
         }
 
@@ -684,6 +712,7 @@
             if (isFolder) {
                 row.addEventListener("dblclick", (e) => {
                     if (e.target.closest('.action-menu-btn')) return;
+                    if (currentView === "trash") return; // 阻止双击进入回收站目录内部
                     if (currentView === "starred") {
                         currentView = "drive";
                         document.getElementById("nav-starred").classList.remove("active");
@@ -695,7 +724,6 @@
                 });
             }
 
-            // 修正右键时传递 index 以支持准确选中和赋值
             row.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 openContextMenu(e, key, isFolder, index);
@@ -737,6 +765,10 @@
                 box.innerHTML = `<span class="crumb ripple-btn">已加星标</span>`;
                 return;
             }
+            if (currentView === "trash") {
+                box.innerHTML = `<span class="crumb ripple-btn">最近删除</span>`;
+                return;
+            }
 
             box.innerHTML = `<span class="crumb ripple-btn" onclick="jumpToPath('')">我的云盘</span>`;
             if (!currentPath) return;
@@ -762,7 +794,6 @@
             progFill.style.display = "block";
             setTimeout(() => { progFill.style.width = "40%"; }, 100);
 
-            // 记录上传创建 Action (可被撤销为删除)
             let actionPayload = { type: 'create', items: [{ newKey: targetKey }] };
 
             await runMutation(async () => {
@@ -791,11 +822,9 @@
             closeDialog('folder-dialog');
         }
 
-        // --- 核心全局右键与剪贴板控制 ---
         function openContextMenu(event, key, isFolder, index) {
             event.stopPropagation();
             
-            // 修复 Bug：右键时直接清除并唯一选中该项目
             selectedKeys.clear();
             selectedKeys.add(key);
             activeFocusedItem = { key, isFolder };
@@ -805,31 +834,37 @@
             const menu = document.getElementById("action-menu");
             menu.innerHTML = ""; 
 
-            const starText = starredKeys.has(key) ? "取消星标" : "添加星标";
-            const starIcon = starredKeys.has(key) ? "star" : "star_border";
-
-            if (isFolder) {
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="jumpToPath('${key}'); closeActionMenu();"><span class="material-symbols-outlined">folder_open</span>打开文件夹</div>`;
+            if (key.startsWith('.trash/')) {
+                // 如果是回收站中的文件，仅提供恢复与彻底删除
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerRestore()"><span class="material-symbols-outlined">restore_from_trash</span>恢复文件</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete_forever</span>彻底删除</div>`;
             } else {
-                const ext = key.split('.').pop().toLowerCase();
-                const previewable = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'pdf'].includes(ext);
-                if (previewable) {
-                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerPreview()"><span class="material-symbols-outlined">visibility</span>在线预览</div>`;
-                }
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
-            }
-            
-            // 增添了全新的复制/剪切/粘贴选项
-            menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCopy(); closeActionMenu();"><span class="material-symbols-outlined">content_copy</span>复制</div>`;
-            menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCut(); closeActionMenu();"><span class="material-symbols-outlined">content_cut</span>剪切</div>`;
-            if (clipboard.type && clipboard.items.length > 0) {
-                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handlePaste(); closeActionMenu();"><span class="material-symbols-outlined">content_paste</span>粘贴至当前</div>`;
-            }
+                // 正常的常规菜单
+                const starText = starredKeys.has(key) ? "取消星标" : "添加星标";
+                const starIcon = starredKeys.has(key) ? "star" : "star_border";
 
-            menu.innerHTML += `<div class="menu-item ripple-btn" onclick="toggleStar('${key}')"><span class="material-symbols-outlined">${starIcon}</span>${starText}</div>`;
-            menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>`;
-            menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
-            menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
+                if (isFolder) {
+                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="jumpToPath('${key}'); closeActionMenu();"><span class="material-symbols-outlined">folder_open</span>打开文件夹</div>`;
+                } else {
+                    const ext = key.split('.').pop().toLowerCase();
+                    const previewable = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'pdf'].includes(ext);
+                    if (previewable) {
+                        menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerPreview()"><span class="material-symbols-outlined">visibility</span>在线预览</div>`;
+                    }
+                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
+                }
+                
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCopy(); closeActionMenu();"><span class="material-symbols-outlined">content_copy</span>复制</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCut(); closeActionMenu();"><span class="material-symbols-outlined">content_cut</span>剪切</div>`;
+                if (clipboard.type && clipboard.items.length > 0) {
+                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handlePaste(); closeActionMenu();"><span class="material-symbols-outlined">content_paste</span>粘贴至当前</div>`;
+                }
+
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="toggleStar('${key}')"><span class="material-symbols-outlined">${starIcon}</span>${starText}</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
+            }
             
             menu.classList.add("show");
             
@@ -872,7 +907,6 @@
                         await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.key, newKey }) });
                         actionItems.push({ oldKey: item.key, newKey });
                     } else if (clipboard.type === 'copy') {
-                        // 基于网盘底层设计标准调用 /copy
                         await fetchAPI(`/copy`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: item.key, newKey }) });
                         actionItems.push({ oldKey: item.key, newKey });
                     }
@@ -889,7 +923,14 @@
                 const res = await fetchAPI(`/download?key=${encodeURIComponent(activeFocusedItem.key)}`);
                 const data = await res.json();
                 if (!data.success || !data.url) throw new Error("获取地址失败");
-                window.open(data.url, '_blank'); 
+                
+                // 改用动态创建 a 标签触发预览
+                const a = document.createElement("a");
+                a.href = data.url;
+                a.target = "_blank";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
             } catch (e) {
                 showSnackbar("预览失败");
             }
@@ -903,28 +944,8 @@
                 if (!data.success || !data.url) throw new Error("获取地址失败");
                 
                 showSnackbar("正在下载...");
-                const filename = activeFocusedItem.key.split('/').pop();
-                try {
-                    const response = await fetch(data.url);
-                    const blob = await response.blob();
-                    const blobUrl = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = blobUrl;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    URL.revokeObjectURL(blobUrl);
-                } catch(e) {
-                    const a = document.createElement("a");
-                    a.href = data.url;
-                    a.download = filename;
-                    a.target = "_blank";
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                }
-
+                // 极简浏览器原生下载触发
+                window.location.href = data.url;
             } catch (e) {
                 showSnackbar("下载失败");
             }
@@ -966,16 +987,40 @@
             closeDialog("rename-dialog");
         }
 
+        // 修改删除逻辑为软删除（移至 /.trash/ 文件夹），回收站内点击删除则永久删除
         async function triggerDelete() {
             const targetKey = activeFocusedItem.key;
             if(starredKeys.has(targetKey)) {
                 starredKeys.delete(targetKey);
                 saveStarredKeys();
             }
-            // 删除通常不可撤销，所以不附加 Action Payload
+
+            if (currentView === 'trash' || targetKey.startsWith('.trash/')) {
+                // 彻底删除
+                await runMutation(async () => {
+                    await fetchAPI(`/delete?key=${encodeURIComponent(targetKey)}`, { method: "DELETE" });
+                }, "已彻底删除");
+            } else {
+                // 软删除，移动到 .trash/ 虚拟根目录
+                const newKey = '.trash/' + targetKey;
+                let actionPayload = { type: 'move', items: [{ oldKey: targetKey, newKey }] };
+                
+                await runMutation(async () => {
+                    await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey: targetKey, newKey }) });
+                }, "已移至最近删除", actionPayload);
+            }
+            closeActionMenu();
+        }
+
+        async function triggerRestore() {
+            const oldKey = activeFocusedItem.key;
+            const newKey = oldKey.replace('.trash/', ''); 
+            
+            let actionPayload = { type: 'move', items: [{ oldKey, newKey }] };
             await runMutation(async () => {
-                await fetchAPI(`/delete?key=${encodeURIComponent(targetKey)}`, { method: "DELETE" });
-            }, "删除成功");
+                await fetchAPI(`/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldKey, newKey }) });
+            }, "已恢复文件", actionPayload);
+            
             closeActionMenu();
         }
 
@@ -983,6 +1028,7 @@
             const tree = { name: "我的云盘", key: "", children: {} };
             rawFilesData.forEach(item => {
                 const key = item.key;
+                if (key.startsWith('.trash/')) return; // 移动选择框中过滤掉回收站
                 const isFolder = key.endsWith('/');
                 if(isFolder) {
                     const parts = key.split('/').filter(Boolean);
@@ -1064,7 +1110,7 @@
         function updateMoveSubtitle() {
             const sub = document.getElementById("move-subtitle-text");
             const targetName = targetMoveFolder === "" ? "我的云盘" : targetMoveFolder.split('/').filter(Boolean).pop();
-            sub.innerText = `Item will be moved to "${targetName}"`;
+            sub.innerText = `项目将被移动到 "${targetName}"`;
         }
 
         function openMoveDialog() {
@@ -1141,6 +1187,7 @@
             const queries = queryStr.split(/\s+/);
             
             const results = rawFilesData.filter(file => {
+                if (file.key.startsWith('.trash/')) return false; // 搜索中过滤回收站
                 const name = file.key.toLowerCase();
                 const ext = name.split('.').pop();
                 return queries.every(q => name.includes(q) || ext.includes(q));
@@ -1224,9 +1271,7 @@
                 }
             });
 
-            // 监听键盘事件增加剪贴板控制
             document.addEventListener("keydown", (e) => {
-                // 如果用户正在输入框中打字，则屏蔽快捷键避免冲突
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
                 if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); execUndo(); }
