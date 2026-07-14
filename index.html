@@ -9,6 +9,7 @@
 
     <style>
         :root {
+            /* Google Material Design 3 核心动态色板 */
             --md-sys-color-background: #F8F9FA;
             --md-sys-color-surface: #FFFFFF;
             --md-sys-color-surface-container: #F0F4F9;
@@ -21,6 +22,7 @@
             --md-sys-color-outline: #747775;
             --md-sys-color-error: #B3261E;
 
+            /* 形状与过渡 */
             --md-shape-small: 8px;
             --md-shape-medium: 12px;
             --md-shape-large: 16px;
@@ -29,77 +31,165 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; user-select: none; }
-        body { background-color: var(--md-sys-color-background); color: var(--md-sys-color-on-surface); display: flex; height: 100vh; overflow: hidden; }
-
-        /* 侧边栏 */
-        .sidebar { width: 280px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
-        .logo-section { display: flex; align-items: center; gap: 12px; padding: 8px 16px 24px 12px; font-size: 22px; font-weight: 500; color: var(--md-sys-color-on-surface); }
-        
-        /* 浮动按钮组 */
-        .fab-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; padding: 0 8px;}
-        .fab-btn {
-            background-color: var(--md-sys-color-surface);
-            color: var(--md-sys-color-on-surface);
-            border: none; padding: 16px 20px; border-radius: var(--md-shape-large);
-            font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px;
-            cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: var(--md-transition);
-            width: fit-content;
+        body { 
+            background-color: var(--md-sys-color-background); 
+            color: var(--md-sys-color-on-surface); 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            overflow: hidden; 
         }
-        .fab-btn.primary { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
-        .fab-btn:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
 
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-radius: var(--md-shape-full); cursor: pointer; color: var(--md-sys-color-on-surface-variant); transition: var(--md-transition); margin: 0 8px;}
+        /* 顶部应用栏 */
+        .top-app-bar {
+            height: 64px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--md-sys-color-background);
+            z-index: 10;
+        }
+
+        .top-bar-left { display: flex; align-items: center; gap: 8px; }
+        
+        /* 居中简化的按钮操作区 */
+        .top-bar-center { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 16px; 
+            flex: 1;
+        }
+        
+        .top-bar-right { display: flex; align-items: center; gap: 16px; }
+
+        .icon-btn {
+            border: none; background: transparent; cursor: pointer; width: 48px; height: 48px;
+            border-radius: var(--md-shape-full); display: flex; align-items: center; justify-content: center;
+            color: var(--md-sys-color-on-surface-variant); transition: var(--md-transition);
+        }
+        .icon-btn:hover { background-color: rgba(0,0,0,0.06); }
+        
+        /* 居中图标：完美还原 MD3 质感高亮图标按钮 */
+        .center-action-btn {
+            border: none; cursor: pointer; width: 48px; height: 48px;
+            border-radius: var(--md-shape-large); display: flex; align-items: center; justify-content: center;
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container); 
+            transition: var(--md-transition);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .center-action-btn:hover { 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15); 
+            background-color: #A8D3FF;
+        }
+
+        .logo-text { font-size: 20px; font-weight: 500; color: var(--md-sys-color-on-surface); display: flex; align-items: center; gap: 12px;}
+
+        /* 右上角：跨域用户信息组件 */
+        .user-profile {
+            display: flex; align-items: center; gap: 8px;
+            padding: 4px 12px 4px 4px; border-radius: var(--md-shape-full);
+            background-color: var(--md-sys-color-surface-container);
+        }
+        .user-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background-color: var(--md-sys-color-primary);
+            color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 14px;
+        }
+        #user-name { font-size: 14px; font-weight: 500; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* 主体布局 */
+        .app-container { display: flex; flex: 1; overflow: hidden; position: relative; }
+
+        /* 侧边栏 (MD3 抽屉式设计) */
+        .sidebar {
+            width: 280px; padding: 12px; display: flex; flex-direction: column; gap: 4px;
+            background-color: var(--md-sys-color-background);
+            transition: var(--md-transition);
+            flex-shrink: 0;
+        }
+        
+        .nav-item { 
+            display: flex; align-items: center; gap: 12px; padding: 12px 24px; 
+            border-radius: var(--md-shape-full); cursor: pointer; 
+            color: var(--md-sys-color-on-surface-variant); transition: var(--md-transition); 
+        }
         .nav-item:hover { background-color: rgba(0,0,0,0.04); }
         .nav-item.active { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); font-weight: 500; }
 
-        /* 主工作区 */
-        .main-workspace { flex: 1; background-color: var(--md-sys-color-surface); margin: 16px 16px 16px 0; border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        /* 移动端与桌面端抽屉响应式控制 */
+        @media (min-width: 900px) {
+            .sidebar.closed { width: 0; padding: 12px 0; overflow: hidden; }
+        }
         
-        .top-bar { padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
-        .search-wrapper { background-color: var(--md-sys-color-surface-container); flex: 1; max-width: 720px; border-radius: var(--md-shape-full); padding: 12px 16px; display: flex; align-items: center; gap: 12px; transition: var(--md-transition); }
-        .search-wrapper:focus-within { background-color: var(--md-sys-color-surface); box-shadow: 0 0 0 2px var(--md-sys-color-primary); }
-        .search-wrapper input { border: none; outline: none; background: transparent; width: 100%; font-size: 16px; }
+        @media (max-width: 899px) {
+            .sidebar {
+                position: fixed; left: -280px; top: 0; bottom: 0; z-index: 99;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            }
+            .sidebar.open { left: 0; }
+            .drawer-overlay {
+                position: fixed; inset: 0; background-color: rgba(0,0,0,0.4);
+                z-index: 98; opacity: 0; pointer-events: none; transition: var(--md-transition);
+            }
+            .drawer-overlay.show { opacity: 1; pointer-events: auto; }
+            .main-workspace { margin: 0 8px 8px 8px !important; }
+        }
 
-        .breadcrumb-container { padding: 12px 24px; display: flex; align-items: center; gap: 4px; font-size: 18px; color: var(--md-sys-color-on-surface); font-weight: 500; border-bottom: 1px solid var(--md-sys-color-surface-container); }
+        /* 仿 Google Drive 的主工作卡片区 */
+        .main-workspace { 
+            flex: 1; background-color: var(--md-sys-color-surface); 
+            margin: 0 16px 16px 16px; border-radius: 24px; 
+            display: flex; flex-direction: column; overflow: hidden; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: var(--md-transition); 
+        }
+        
+        /* 面包屑与搜索框布局 */
+        .breadcrumb-container { padding: 16px 24px; display: flex; align-items: center; gap: 4px; font-size: 18px; color: var(--md-sys-color-on-surface); font-weight: 500; border-bottom: 1px solid var(--md-sys-color-surface-container); }
         .crumb { cursor: pointer; padding: 4px 8px; border-radius: var(--md-shape-small); transition: var(--md-transition); }
         .crumb:hover { background-color: var(--md-sys-color-surface-container); }
         .crumb-separator { font-size: 20px; color: var(--md-sys-color-outline); }
 
+        .search-wrapper { 
+            background-color: var(--md-sys-color-surface-container); 
+            border-radius: var(--md-shape-full); padding: 8px 16px; 
+            display: flex; align-items: center; gap: 8px; transition: var(--md-transition); 
+            max-width: 240px;
+        }
+        .search-wrapper:focus-within { background-color: var(--md-sys-color-surface); box-shadow: 0 0 0 2px var(--md-sys-color-primary); }
+        .search-wrapper input { border: none; outline: none; background: transparent; width: 100%; font-size: 14px; }
+        @media (max-width: 600px) { .search-wrapper { display: none; } }
+
+        /* 上传进度条 */
         .progress-bar-container { width: 100%; height: 4px; background-color: transparent; position: relative; overflow: hidden; }
         .progress-bar-fill { height: 100%; width: 0%; background-color: var(--md-sys-color-primary); transition: width 0.2s ease; display: none; }
 
-        /* 列表视图 - 依照截图重新划分网格 */
+        /* 文件列表 */
         .file-list-view { flex: 1; overflow-y: auto; padding: 8px 0; }
-        .list-header, .file-row { 
-            display: grid; 
-            grid-template-columns: 3fr 1.5fr 1fr 1.5fr 60px; /* Name, Kind, Size, Date, Actions */
-            padding: 12px 24px; 
-            align-items: center;
-        }
-        .list-header { font-size: 13px; font-weight: 500; color: var(--md-sys-color-on-surface-variant); border-bottom: 1px solid var(--md-sys-color-surface-container); }
+        .list-header { display: grid; grid-template-columns: 2.5fr 1fr 1fr 60px; padding: 12px 24px; font-size: 13px; font-weight: 500; color: var(--md-sys-color-on-surface-variant); border-bottom: 1px solid var(--md-sys-color-surface-container); }
         
-        .file-row { cursor: pointer; border-bottom: 1px solid #f9f9f9; transition: var(--md-transition); }
+        .file-row { display: grid; grid-template-columns: 2.5fr 1fr 1fr 60px; padding: 12px 24px; align-items: center; cursor: pointer; border-bottom: 1px solid var(--md-sys-color-surface-container); transition: var(--md-transition); }
         .file-row:hover { background-color: var(--md-sys-color-surface-container); }
         .cell-name { display: flex; align-items: center; gap: 16px; font-weight: 500; }
         .cell-info { font-size: 13px; color: var(--md-sys-color-on-surface-variant); }
         
-        .icon-folder { color: #5F6368; font-fill: true; }
-        .icon-file { color: var(--md-sys-color-primary); }
+        .icon-folder { color: var(--md-sys-color-primary); }
+        .icon-file { color: var(--md-sys-color-outline); }
 
         .action-menu-btn { border: none; background: transparent; cursor: pointer; width: 36px; height: 36px; border-radius: var(--md-shape-full); display: flex; align-items: center; justify-content: center; color: var(--md-sys-color-on-surface-variant); }
         .action-menu-btn:hover { background-color: rgba(0,0,0,0.06); }
 
-        /* 悬浮菜单 - 仿截图更丰富的菜单项 */
-        .context-menu { position: fixed; background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-shape-medium); padding: 8px 0; min-width: 220px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 100; opacity: 0; transform: scale(0.9); transition: var(--md-transition); pointer-events: none; }
+        /* 悬浮上下文菜单 */
+        .context-menu { position: fixed; background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-shape-medium); padding: 8px 0; min-width: 180px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 100; opacity: 0; transform: scale(0.9); transition: var(--md-transition); pointer-events: none; }
         .context-menu.show { opacity: 1; transform: scale(1); pointer-events: auto; }
-        .menu-item { padding: 10px 20px; display: flex; align-items: center; gap: 16px; font-size: 14px; cursor: pointer; color: var(--md-sys-color-on-surface); }
-        .menu-item:hover { background-color: rgba(0,0,0,0.06); }
-        .menu-divider { height: 1px; background-color: var(--md-sys-color-outline); opacity: 0.2; margin: 4px 0; }
+        .menu-item { padding: 10px 16px; display: flex; align-items: center; gap: 12px; font-size: 14px; cursor: pointer; color: var(--md-sys-color-on-surface); }
+        .menu-item:hover { background-color: rgba(0,0,0,0.05); }
 
         /* 对话框 */
         .dialog-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: var(--md-transition); }
         .dialog-overlay.show { opacity: 1; pointer-events: auto; }
-        .dialog-card { background-color: var(--md-sys-color-surface-container-high); width: 90%; max-width: 400px; border-radius: 24px; padding: 24px; box-shadow: 0px 10px 30px rgba(0,0,0,0.2); transform: translateY(30px); transition: var(--md-transition); }
+        .dialog-card { background-color: var(--md-sys-color-surface-container-high); width: 90%; max-width: 400px; border-radius: 28px; padding: 24px; box-shadow: 0px 10px 30px rgba(0,0,0,0.2); transform: translateY(30px); transition: var(--md-transition); }
         .dialog-overlay.show .dialog-card { transform: translateY(0); }
         .dialog-title { font-size: 24px; margin-bottom: 16px; font-weight: 400; }
         
@@ -110,9 +200,9 @@
         .btn-text:hover { background-color: rgba(11, 87, 208, 0.08); }
 
         .tree-selector { max-height: 250px; overflow-y: auto; border: 1px solid var(--md-sys-color-outline); border-radius: var(--md-shape-small); padding: 8px; margin-top: 10px; }
-        .tree-item { padding: 10px; display: flex; align-items: center; gap: 8px; border-radius: var(--md-shape-small); cursor: pointer; }
+        .tree-item { padding: 10px; display: flex; align-items: center; gap: 8px; border-radius: var(--md-shape-small); cursor: pointer; font-size: 14px; }
         .tree-item:hover { background-color: rgba(0,0,0,0.04); }
-        .tree-item.selected { background-color: var(--md-sys-color-primary-container); }
+        .tree-item.selected { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); font-weight: 500; }
 
         .snackbar { position: fixed; bottom: 24px; left: 24px; background-color: #313033; color: #F4EFF4; padding: 14px 24px; border-radius: var(--md-shape-small); font-size: 14px; box-shadow: 0px 3px 5px rgba(0,0,0,0.2); transform: translateY(100px); opacity: 0; transition: var(--md-transition); z-index: 2000; }
         .snackbar.show { transform: translateY(0); opacity: 1; }
@@ -120,89 +210,81 @@
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="logo-section">
-            <img src="https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="logo" width="32">
-            <span>R2 云盘</span>
+    <header class="top-app-bar">
+        <div class="top-bar-left">
+            <button class="icon-btn" onclick="toggleDrawer()">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <div class="logo-text">
+                <img src="https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="logo" width="28">
+                <span>R2 云盘</span>
+            </div>
         </div>
-
-        <div class="fab-group">
-            <button class="fab-btn primary" onclick="openUploadSelect()">
-                <span class="material-symbols-outlined">add</span>
-                <span>上传文件</span>
+        
+        <div class="top-bar-center">
+            <button class="center-action-btn" onclick="openUploadSelect()" title="上传文件">
+                <span class="material-symbols-outlined">upload</span>
             </button>
             <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(this)">
-
-            <button class="fab-btn" onclick="openCreateFolderDialog()">
+            
+            <button class="center-action-btn" onclick="openCreateFolderDialog()" title="新建文件夹">
                 <span class="material-symbols-outlined">create_new_folder</span>
-                <span>新建文件夹</span>
             </button>
         </div>
 
-        <div class="nav-item">
-            <span class="material-symbols-outlined">schedule</span>
-            <span>最近使用</span>
-        </div>
-        <div class="nav-item active">
-            <span class="material-symbols-outlined">folder_open</span>
-            <span>我的云盘</span>
-        </div>
-        <div class="nav-item">
-            <span class="material-symbols-outlined">group</span>
-            <span>共享区</span>
-        </div>
-        <div class="nav-item">
-            <span class="material-symbols-outlined">delete</span>
-            <span>回收站</span>
-        </div>
-    </aside>
-
-    <main class="main-workspace">
-        <div class="top-bar">
+        <div class="top-bar-right">
             <div class="search-wrapper">
                 <span class="material-symbols-outlined">search</span>
-                <input type="text" id="search-input" placeholder="在云盘中搜索文件..." oninput="handleSearch()">
+                <input type="text" id="search-input" placeholder="搜索文件..." oninput="handleSearch()">
+            </div>
+            <div class="user-profile" id="user-profile-box">
+                <div class="user-avatar" id="user-avatar-text">?</div>
+                <span id="user-name">加载中...</span>
             </div>
         </div>
+    </header>
 
-        <div class="breadcrumb-container" id="breadcrumbs"></div>
+    <div class="app-container">
+        <div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
 
-        <div class="progress-bar-container">
-            <div class="progress-bar-fill" id="upload-progress-fill"></div>
-        </div>
-
-        <div class="file-list-view">
-            <div class="list-header">
-                <div>名称</div>
-                <div>类型</div>
-                <div>大小</div>
-                <div>修改日期</div>
-                <div></div>
+        <aside class="sidebar" id="app-drawer">
+            <div class="nav-item active">
+                <span class="material-symbols-outlined">folder_open</span>
+                <span>我的云盘</span>
             </div>
-            <div id="file-rows-container"></div>
-        </div>
-    </main>
+            <div class="nav-item">
+                <span class="material-symbols-outlined">schedule</span>
+                <span>最近使用</span>
+            </div>
+            <div class="nav-item">
+                <span class="material-symbols-outlined">delete</span>
+                <span>回收站</span>
+            </div>
+        </aside>
+
+        <main class="main-workspace">
+            <div class="breadcrumb-container" id="breadcrumbs"></div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="upload-progress-fill"></div>
+            </div>
+
+            <div class="file-list-view">
+                <div class="list-header">
+                    <div>名称</div>
+                    <div>修改日期</div>
+                    <div>大小</div>
+                    <div></div>
+                </div>
+                <div id="file-rows-container"></div>
+            </div>
+        </main>
+    </div>
 
     <div class="context-menu" id="action-menu">
-        <div class="menu-item" id="menu-item-preview" onclick="triggerPreview()">
-            <span class="material-symbols-outlined" id="icon-preview">visibility</span>
-            <span id="text-preview">在线预览</span>
-        </div>
-        <div class="menu-item" onclick="triggerPlaceholder('获取信息')"><span class="material-symbols-outlined">info</span>获取信息</div>
-        <div class="menu-divider"></div>
-        
-        <div class="menu-item" id="menu-item-download" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>直接下载</div>
-        
-        <div class="menu-item" onclick="triggerPlaceholder('分享')"><span class="material-symbols-outlined">share</span>分享...</div>
-        <div class="menu-divider"></div>
-        
-        <div class="menu-item" onclick="triggerPlaceholder('重命名')"><span class="material-symbols-outlined">edit</span>重命名</div>
-        <div class="menu-item" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动到...</div>
-        <div class="menu-divider"></div>
-        
-        <div class="menu-item" onclick="triggerDelete()" style="color: var(--md-sys-color-error);">
-            <span class="material-symbols-outlined">delete</span>删除所选内容
-        </div>
+        <div class="menu-item" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载</div>
+        <div class="menu-item" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>
+        <div class="menu-item" onclick="triggerDelete()" style="color: var(--md-sys-color-error);"><span class="material-symbols-outlined">delete</span>删除</div>
     </div>
 
     <div class="dialog-overlay" id="folder-dialog">
