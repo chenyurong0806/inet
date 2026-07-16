@@ -891,8 +891,8 @@
             <div class="search-container">
                 <div class="search-wrapper">
                     <span class="material-symbols-outlined">search</span>
-                    <input type="text" id="search-input" placeholder="搜索关键词"
-                        oninput="handleAdvancedSearch()" onfocus="handleAdvancedSearch()">
+                    <input type="text" id="search-input" placeholder="搜索关键词" oninput="handleAdvancedSearch()"
+                        onfocus="handleAdvancedSearch()">
                     <span id="search-count"></span>
                 </div>
                 <div class="search-dropdown" id="search-dropdown"></div>
@@ -1098,13 +1098,15 @@
                 if (result.loggedIn) {
                     const usernameEl = document.getElementById("user-name");
                     const avatarEl = document.getElementById("user-avatar-text");
-                    if (usernameEl && result.data.nickname) usernameEl.innerText = result.data.nickname;
+                    // 使用 username 字段，不再使用 nickname
+                    if (usernameEl && result.data.username) usernameEl.innerText = result.data.username;
                     if (avatarEl) {
                         if (result.data.avatar) {
                             avatarEl.innerHTML =
                                 `<img src="${result.data.avatar}" alt="avatar" crossorigin="anonymous">`;
-                        } else if (result.data.nickname) {
-                            avatarEl.innerText = result.data.nickname.charAt(0).toUpperCase();
+                        } else if (result.data.username) {
+                            // 没有头像时，展示 username 的首字母
+                            avatarEl.innerText = result.data.username.charAt(0).toUpperCase();
                         }
                     }
                     fetchFileList();
