@@ -1289,7 +1289,7 @@
             localStorage.removeItem("auth_token");
             document.getElementById("user-menu").classList.remove("show");
             // 跳转到全局 SSO 登出接口，清理全局登录状态后重定向回首页
-            window.location.href = `${LOGIN_SYSTEM}/logout?redirect=${encodeURIComponent(window.location.origin)}`;
+            window.location.href = `${LOGIN_SYSTEM}/api/logout?redirect=${encodeURIComponent(window.location.origin)}`;
         }
 
         // ==================== 用户信息与初始化 ====================
