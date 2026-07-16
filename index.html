@@ -1244,8 +1244,7 @@
             document.getElementById("user-profile-box").style.display = "none";
             document.getElementById("guest-login-box").style.display = "block";
             
-            // 禁用新建/上传按钮
-            document.querySelectorAll('.auth-required').forEach(btn => btn.disabled = true);
+            updateActionButtons();
             
             rawFilesData = [];
             currentRenderedItems = [];
@@ -1258,7 +1257,14 @@
             document.getElementById("user-profile-box").style.display = "flex";
             document.getElementById("guest-login-box").style.display = "none";
             
-            document.querySelectorAll('.auth-required').forEach(btn => btn.disabled = false);
+            updateActionButtons();
+        }
+
+        function updateActionButtons() {
+            const isRestrictedView = currentView === 'starred' || currentView === 'trash';
+            document.querySelectorAll('.auth-required').forEach(btn => {
+                btn.disabled = isGuestMode || isRestrictedView;
+            });
         }
 
         // ==================== API 工具函数 ====================
@@ -1268,7 +1274,8 @@
             const headers = { ...(options.headers || {}), "Authorization": `Bearer ${token}` };
             const response = await fetch(API + endpoint, { ...options, headers });
             if (response.status === 401) {
-                handleLogout(); // 改为直接退出登录进入访客模式，不强制跳转页面
+                localStorage.removeItem("auth_token");
+                enableGuestMode();
                 throw new Error("Unauthorized");
             }
             return response;
@@ -1279,11 +1286,10 @@
         }
 
         function handleLogout() {
-            // 清除本地 Token, 不跳转，回到访客模式
             localStorage.removeItem("auth_token");
             document.getElementById("user-menu").classList.remove("show");
-            enableGuestMode();
-            showSnackbar("已退出登录");
+            // 跳转到全局 SSO 登出接口，清理全局登录状态后重定向回首页
+            window.location.href = `${LOGIN_SYSTEM}/logout?redirect=${encodeURIComponent(window.location.origin)}`;
         }
 
         // ==================== 用户信息与初始化 ====================
@@ -1534,6 +1540,7 @@
             document.getElementById("nav-" + view).classList.add("active");
             selectedKeys.clear();
             if (window.innerWidth < 900) toggleDrawer();
+            updateActionButtons();
             renderWorkspace();
         }
 
@@ -2034,7 +2041,7 @@
 
         // ==================== 文件选择和上传入口 ====================
         function openUploadSelect() {
-            if (isGuestMode) return;
+            if (isGuestMode || currentView === 'starred' || currentView === 'trash') return;
             if (isUploading) {
                 showSnackbar("当前有文件正在上传中，请稍候...");
                 return;
@@ -2067,7 +2074,7 @@
 
         // ==================== 文件夹操作 ====================
         function openCreateFolderDialog() {
-            if (isGuestMode) return;
+            if (isGuestMode || currentView === 'starred' || currentView === 'trash') return;
             document.getElementById("new-folder-name").value = "";
             openDialog('folder-dialog');
         }
