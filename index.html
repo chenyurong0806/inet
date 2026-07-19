@@ -1226,6 +1226,8 @@
 
         let isGuestMode = false; // 是否处于访客模式
 
+        let redirecting = false;
+
         let currentPath = "";
         let currentView = "drive";
         let rawFilesData = [];
@@ -1287,8 +1289,11 @@
             });
 
             if (response.status === 401) {
-                redirectToLogin();
-                throw new Error("Unauthorized");
+                if (!redirecting) {
+                    redirecting = true;
+                    redirectToLogin();
+                    throw new Error("Unauthorized");
+                }
             }
             return response;
         }
@@ -1312,7 +1317,10 @@
                 });
 
                 if (response.status === 401) {
-                    redirectToLogin();
+                    if (!redirecting) {
+                        redirecting = true;
+                        redirectToLogin();
+                    }
                     return;
                 }
 
@@ -1360,8 +1368,10 @@
                 });
 
                 if (response.status === 401) {
-                    // 彻底没救了才跳去登录页
-                    redirectToLogin();
+                    if (!redirecting) {
+                        redirecting = true;
+                        redirectToLogin();
+                    }
                 } else {
                     // 登录成功！
                     disableGuestMode();
@@ -1378,7 +1388,10 @@
                 }
             } catch (error) {
                 console.error("检查登录状态异常", error);
-                redirectToLogin();
+                if (!redirecting) {
+                    redirecting = true;
+                    redirectToLogin();
+                }
             }
         }
 
