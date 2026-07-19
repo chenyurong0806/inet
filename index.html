@@ -6,9 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iNet Drive</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
-        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
 
     <style>
         :root {
@@ -124,26 +122,6 @@
             cursor: not-allowed;
         }
 
-        .btn-filled {
-            background-color: var(--md-sys-color-primary);
-            color: var(--md-sys-color-on-primary);
-            border: none;
-            padding: 10px 24px;
-            border-radius: var(--md-shape-full);
-            font-weight: 500;
-            cursor: pointer;
-            font-size: 14px;
-            transition: var(--md-transition);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-filled:hover {
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-            background-color: rgb(215, 108, 0);
-        }
-
         .logo-text {
             font-size: 20px;
             font-weight: 700;
@@ -236,7 +214,6 @@
             position: relative;
         }
 
-        /* 侧边栏与防止挤压的核心结构优化 */
         .sidebar {
             width: 280px;
             display: flex;
@@ -290,7 +267,6 @@
             font-weight: 500;
         }
 
-        /* 存储空间使用配额 UI */
         .storage-quota-container {
             margin: auto 16px 24px 16px;
             padding: 16px;
@@ -342,7 +318,6 @@
             text-align: right;
         }
 
-        /* 存储空间悬浮窗 */
         .storage-tooltip {
             position: absolute;
             bottom: calc(100% + 12px);
@@ -565,13 +540,8 @@
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .file-list-view {
@@ -582,7 +552,6 @@
             flex-direction: column;
         }
 
-        /* ----- 对齐布局方案 ----- */
         .list-grid-layout {
             display: grid;
             grid-template-columns: minmax(180px, 1fr) 150px 100px 100px;
@@ -613,7 +582,6 @@
             gap: 4px;
             justify-content: flex-end;
             padding-right: 4px;
-            /* 微调与下方按钮中心对齐 */
         }
 
         .row-action-box {
@@ -621,7 +589,6 @@
             align-items: center;
             justify-content: flex-end;
             padding-right: 8px;
-            /* 保证这三个点按钮同表头新建按钮居中对齐 */
         }
 
         .file-row:hover {
@@ -937,7 +904,6 @@
                 top: 0;
                 bottom: 0;
                 z-index: 99;
-                /* 展开后添加边缘阴影 */
                 box-shadow: 4px 0 16px rgba(0, 0, 0, 0);
                 transition: left var(--md-transition), box-shadow var(--md-transition);
             }
@@ -966,7 +932,6 @@
             .drawer-overlay {
                 position: fixed;
                 inset: 0;
-                /* 背景设定为透明，不让背景变暗 */
                 background-color: transparent;
                 z-index: 98;
                 opacity: 0;
@@ -1035,8 +1000,7 @@
                 <span class="material-symbols-outlined">menu</span>
             </button>
             <div class="logo-text">
-                <img src="/icon.png" alt="iNet Drive" class="inet-logo"
-                    onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0Y1N0MwMCI+PHBhdGggZD0iTTE5IDRIMWMtMS4xMSAwLTIgLjg5LTIgMnYxMmMwIDEuMTEuODkgMiAyIDJoMTRjMS4xMSAwIDItLjg5IDItMlY2YzAtMS4xMS0uODktMi0yLTJ6bTAgMTRIMVY2aDE4djEyeiIvPjxwYXRoIGQ9Ik01IDEwaDR2NGgtNHoiLz48L3N2Zz4='">
+                <img src="/icon.png" alt="iNet Drive" class="inet-logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0Y1N0MwMCI+PHBhdGggZD0iTTE5IDRIMWMtMS4xMSAwLTIgLjg5LTIgMnYxMmMwIDEuMTEuODkgMiAyIDJoMTRjMS4xMSAwIDItLjg5IDItMlY2YzAtMS4xMS0uODktMi0yLTJ6bTAgMTRIMVY2aDE4djEyeiIvPjxwYXRoIGQ9Ik01IDEwaDR2NGgtNHoiLz48L3N2Zz4='">
                 <span>iNet Drive</span>
             </div>
         </div>
@@ -1045,30 +1009,19 @@
             <div class="search-container">
                 <div class="search-wrapper">
                     <span class="material-symbols-outlined">search</span>
-                    <input type="text" id="search-input" placeholder="搜索关键词" oninput="handleAdvancedSearch()"
-                        onfocus="handleAdvancedSearch()">
+                    <input type="text" id="search-input" placeholder="搜索关键词" oninput="handleAdvancedSearch()" onfocus="handleAdvancedSearch()">
                     <span id="search-count"></span>
                 </div>
                 <div class="search-dropdown" id="search-dropdown"></div>
             </div>
 
             <div class="user-profile-wrapper">
-                <!-- 访客模式下的登录按钮 -->
-                <div id="guest-login-box" style="display: none;">
-                    <button class="btn-filled ripple-btn" onclick="redirectToLogin()">
-                        <span class="material-symbols-outlined" style="font-size: 18px;">login</span> 登录
-                    </button>
-                </div>
-
                 <!-- 登录态下的用户菜单 -->
                 <div class="user-profile ripple-btn" id="user-profile-box" onclick="toggleUserMenu(event)">
-                    <div class="user-avatar" id="user-avatar-text">?</div>
+                    <div class="user-avatar" id="user-avatar-text">U</div>
                     <span id="user-name">加载中...</span>
                 </div>
                 <div class="user-menu" id="user-menu">
-                    <div class="menu-item ripple-btn" onclick="window.open('https://user.chenyurong.qzz.io', '_blank')">
-                        <span class="material-symbols-outlined">manage_accounts</span>管理我的账号
-                    </div>
                     <div class="menu-item ripple-btn danger-item" onclick="handleLogout()">
                         <span class="material-symbols-outlined">logout</span>退出登录
                     </div>
@@ -1081,13 +1034,10 @@
         <div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
 
         <aside class="sidebar" id="app-drawer">
-            <!-- 套一层固定宽度容器避免挤压 -->
             <div class="sidebar-inner">
                 <div class="sidebar-header">
-                    <img src="/icon.png" alt="iNet Drive" class="inet-logo"
-                        onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0Y1N0MwMCI+PHBhdGggZD0iTTE5IDRIMWMtMS4xMSAwLTIgLjg5LTIgMnYxMmMwIDEuMTEuODkgMiAyIDJoMTRjMS4xMSAwIDItLjg5IDItMlY2YzAtMS4xMS0uODktMi0yLTJ6bTAgMTRIMVY2aDE4djEyeiIvPjxwYXRoIGQ9Ik01IDEwaDR2NGgtNHoiLz48L3N2Zz4='">
-                    <span style="font-size: 20px; font-weight: 700; color: var(--md-sys-color-primary);">iNet
-                        Drive</span>
+                    <img src="/icon.png" alt="iNet Drive" class="inet-logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0Y1N0MwMCI+PHBhdGggZD0iTTE5IDRIMWMtMS4xMSAwLTIgLjg5LTIgMnYxMmMwIDEuMTEuODkgMiAyIDJoMTRjMS4xMSAwIDItLjg5IDItMlY2YzAtMS4xMS0uODktMi0yLTJ6bTAgMTRIMVY2aDE4djEyeiIvPjxwYXRoIGQ9Ik01IDEwaDR2NGgtNHoiLz48L3N2Zz4='">
+                    <span style="font-size: 20px; font-weight: 700; color: var(--md-sys-color-primary);">iNet Drive</span>
                 </div>
                 <div class="nav-items-container">
                     <div class="nav-item active ripple-btn" onclick="switchView('drive')" id="nav-drive">
@@ -1109,11 +1059,8 @@
                         <span class="material-symbols-outlined">cloud</span>
                         <span>存储空间</span>
                     </div>
-                    <!-- 按色彩比例拼接的进度条 -->
-                    <div class="storage-progress-bg" id="storage-progress-bg">
-                    </div>
+                    <div class="storage-progress-bg" id="storage-progress-bg"></div>
                     <div class="storage-text" id="storage-text-details">0 B / 1 GB</div>
-
                     <div class="storage-tooltip" id="storage-tooltip-content">
                         <div class="storage-tooltip-title">存储空间详情</div>
                         <div id="storage-type-breakdown">
@@ -1143,7 +1090,6 @@
             <div class="upload-progress-text" id="upload-progress-text"></div>
 
             <div class="file-list-view">
-                <!-- 使用统一布局类 -->
                 <div class="list-grid-layout list-header">
                     <div>名称</div>
                     <div>修改日期</div>
@@ -1153,8 +1099,7 @@
                         <button class="icon-btn ripple-btn auth-required" onclick="openUploadSelect()" title="上传文件">
                             <span class="material-symbols-outlined">upload</span>
                         </button>
-                        <button class="icon-btn ripple-btn auth-required" onclick="openCreateFolderDialog()"
-                            title="新建文件夹">
+                        <button class="icon-btn ripple-btn auth-required" onclick="openCreateFolderDialog()" title="新建文件夹">
                             <span class="material-symbols-outlined">create_new_folder</span>
                         </button>
                     </div>
@@ -1194,17 +1139,13 @@
                 <button class="btn-text ripple-btn" onclick="closeDialog('move-dialog')">取消</button>
                 <button class="btn-text ripple-btn submit" onclick="triggerMoveFile()">移动</button>
             </div>
-
             <div class="move-subtitle" id="move-subtitle-text">项目将被移动到 "我的云盘"</div>
-
             <div class="move-item-preview">
                 <div class="move-item-icon-box">
-                    <span class="material-symbols-outlined" id="move-preview-icon"
-                        style="color: #9C27B0">description</span>
+                    <span class="material-symbols-outlined" id="move-preview-icon" style="color: #9C27B0">description</span>
                 </div>
                 <span id="move-preview-name">暑假作业</span>
             </div>
-
             <div class="move-tree-container" id="move-tree-container">
             </div>
         </div>
@@ -1215,7 +1156,6 @@
     <script>
         // ==================== 配置与全局变量 ====================
         const API = "https://file.chenyurong.qzz.io/api";
-        const LOGIN_SYSTEM = "https://login.chenyurong.qzz.io";
 
         const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB
         let MAX_STORAGE_QUOTA = 200 * 1024 * 1024; // 200 MB
@@ -1223,10 +1163,6 @@
         const CHUNK_SIZE = 10 * 1024 * 1024;
         const MAX_CONCURRENT_CHUNKS = 1;
         const MAX_CHUNK_RETRIES = 3;
-
-        let isGuestMode = false; // 是否处于访客模式
-
-        let redirecting = false;
 
         let currentPath = "";
         let currentView = "drive";
@@ -1251,148 +1187,67 @@
         let activeUploadAborter = null;
         let isUploading = false;
 
-        // ==================== 访客模式核心逻辑 ====================
-        function enableGuestMode() {
-            isGuestMode = true;
-            document.getElementById("user-profile-box").style.display = "none";
-            document.getElementById("guest-login-box").style.display = "block";
+        // ==================== 初始化与用户逻辑 ====================
+        window.addEventListener("DOMContentLoaded", () => {
+            setupGlobalListeners();
+            initApp();
+        });
 
-            updateActionButtons();
-
-            rawFilesData = [];
-            currentRenderedItems = [];
-            renderWorkspace();
-            updateStorageQuotaUI();
+        async function initApp() {
+            // 1. 尝试获取用户信息，展示在左上角
+            fetchUserInfo();
+            // 2. 假设已由外部系统(CF Access等)验证，直接请求列表
+            await fetchFileList();
         }
 
-        function disableGuestMode() {
-            isGuestMode = false;
-            document.getElementById("user-profile-box").style.display = "flex";
-            document.getElementById("guest-login-box").style.display = "none";
+        async function fetchUserInfo() {
+            try {
+                // 如果使用 Cloudflare Access 网关，尝试调用其凭据接口获取信息
+                const res = await fetch('/.cdn-cgi/access/get-identity');
+                if (res.ok) {
+                    const data = await res.json();
+                    const email = data.email || "";
+                    if (email) {
+                        document.getElementById("user-name").innerText = email.split('@')[0];
+                        document.getElementById("user-avatar-text").innerText = email.charAt(0).toUpperCase();
+                        return;
+                    }
+                }
+            } catch (error) {
+                // 如果没有此接口或出现跨域，则吞掉异常走兜底逻辑
+            }
+            
+            // 兜底 UI
+            document.getElementById("user-name").innerText = "我的账户";
+            document.getElementById("user-avatar-text").innerText = "U";
+        }
 
-            updateActionButtons();
+        function handleLogout() {
+            // 若为 Cloudflare Access 等，通常注销地址为 /.cdn-cgi/access/logout
+            // 如果你有特定的外部系统注销地址，请在这里修改
+            window.location.href = "/.cdn-cgi/access/logout";
         }
 
         function updateActionButtons() {
             const isRestrictedView = currentView === 'starred' || currentView === 'trash';
             document.querySelectorAll('.auth-required').forEach(btn => {
-                btn.disabled = isGuestMode || isRestrictedView;
+                btn.disabled = isRestrictedView;
             });
         }
 
         // ==================== API 工具函数 ====================
-        // 统一的 API 封装（附带 Token）
         async function fetchAPI(endpoint, options = {}) {
+            // credentials: "include" 是确保网关鉴权 Cookie 透传到后端的关键
             const response = await fetch(API + endpoint, {
                 ...options,
-                credentials: "include" // 关键：让浏览器自动带上共享的 Cookie
+                credentials: "include" 
             });
 
-            if (response.status === 401) {
-                if (!redirecting) {
-                    redirecting = true;
-                    redirectToLogin();
-                    throw new Error("Unauthorized");
-                }
+            if (response.status === 401 || response.status === 403) {
+                showSnackbar("认证已失效或无权限，请刷新页面重新登录");
+                throw new Error("Unauthorized");
             }
             return response;
-        }
-
-        function redirectToLogin() {
-            // 强制跳转到登录系统，把当前页作为 from 参数传过去，方便登入后跳回
-            window.location.href = `${LOGIN_SYSTEM}/?from=${encodeURIComponent(window.location.href)}`;
-        }
-
-        function handleLogout() {
-            // 退出时让浏览器跳回登录系统的 logout 接口，由登录系统负责清除跨域 Cookie
-            window.location.href = `${LOGIN_SYSTEM}/api/logout?redirect=${encodeURIComponent(window.location.origin)}`;
-        }
-
-        // ==================== 用户信息与初始化 ====================
-        async function fetchGlobalUserInfo() {
-            try {
-                const response = await fetch(`${LOGIN_SYSTEM}/api/userinfo`, {
-                    method: "GET",
-                    credentials: "include" // 请求登录系统同样带上跨域 Cookie
-                });
-
-                if (response.status === 401) {
-                    if (!redirecting) {
-                        redirecting = true;
-                        redirectToLogin();
-                    }
-                    return;
-                }
-
-                const result = await response.json();
-                if (result.loggedIn) {
-                    const usernameEl = document.getElementById("user-name");
-                    const avatarEl = document.getElementById("user-avatar-text");
-                    if (usernameEl && result.data.username) usernameEl.innerText = result.data.username;
-                    if (avatarEl) {
-                        if (result.data.avatar) {
-                            avatarEl.innerHTML = `<img src="${result.data.avatar}" alt="avatar" crossorigin="anonymous">`;
-                        } else if (result.data.username) {
-                            avatarEl.innerText = result.data.username.charAt(0).toUpperCase();
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error("获取用户信息失败", error);
-            }
-        }
-
-        window.addEventListener("DOMContentLoaded", () => {
-            setupGlobalListeners();
-            checkLoginStatus();
-        });
-
-        async function checkLoginStatus() {
-            // 1. 核心修复：拦截从登录系统跳回来时地址栏里的 token
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlToken = urlParams.get("token") || urlParams.get("sso_token");
-
-            if (urlToken) {
-                // 由前端负责在根域名种下共享 Cookie (后续的 fetch 和下载链接会自动携带)
-                document.cookie = `auth_token=${encodeURIComponent(urlToken)}; domain=chenyurong.qzz.io; path=/; max-age=2592000; Secure; SameSite=Lax`;
-
-                // 抹除地址栏上的 token 参数，保持网址干净
-                window.history.replaceState(null, '', window.location.origin + window.location.pathname);
-            }
-
-            try {
-                // 2. 发起请求，测试 Cookie 是否有效
-                const response = await fetch(API + "/list", {
-                    method: "GET",
-                    credentials: "include" // 自动携带刚刚种下的 Cookie
-                });
-
-                if (response.status === 401) {
-                    if (!redirecting) {
-                        redirecting = true;
-                        redirectToLogin();
-                    }
-                } else {
-                    // 登录成功！
-                    disableGuestMode();
-
-                    const data = await response.json();
-                    if (data.quota) MAX_STORAGE_QUOTA = data.quota;
-                    rawFilesData = data.files || [];
-
-                    renderWorkspace();
-                    updateStorageQuotaUI();
-
-                    // 去获取头像和用户名
-                    fetchGlobalUserInfo();
-                }
-            } catch (error) {
-                console.error("检查登录状态异常", error);
-                if (!redirecting) {
-                    redirecting = true;
-                    redirectToLogin();
-                }
-            }
         }
 
         // ==================== 存储配额计算与 UI 更新 ====================
@@ -1440,10 +1295,7 @@
             const bgContainer = document.getElementById('storage-progress-bg');
             bgContainer.innerHTML = '';
 
-            // 动态拼接不同颜色进度条 (超量情况处理)
             let remainingPercentage = 100;
-            let combinedSize = 0;
-
             for (let type in categories) {
                 if (categories[type].size > 0) {
                     let rawPerc = (categories[type].size / MAX_STORAGE_QUOTA) * 100;
@@ -1597,10 +1449,15 @@
             try {
                 const response = await fetchAPI("/list", { method: "GET" });
                 const data = await response.json();
-                if (data.quota) MAX_STORAGE_QUOTA = data.quota;
-                rawFilesData = data.files || [];
-                renderWorkspace();
-                updateStorageQuotaUI();
+                
+                if (data.success) {
+                    if (data.quota) MAX_STORAGE_QUOTA = data.quota;
+                    rawFilesData = data.files || [];
+                    renderWorkspace();
+                    updateStorageQuotaUI();
+                } else {
+                    showSnackbar(data.message || "获取列表失败");
+                }
             } catch (error) {
                 console.error("获取文件列表异常", error);
             }
@@ -1628,11 +1485,6 @@
             const container = document.getElementById("file-rows-container");
             container.innerHTML = "";
             currentRenderedItems = [];
-
-            if (isGuestMode) {
-                container.innerHTML = `<div style="text-align:center; padding: 48px; color: var(--md-sys-color-outline)">请登录后查看文件</div>`;
-                return;
-            }
 
             if (currentView === "starred") {
                 renderStarredView(container);
@@ -1751,7 +1603,6 @@
 
         function createRowNode(name, date, size, icon, key, isFolder, index, isSelected, isStarred, showFullPath) {
             const row = document.createElement("div");
-            // 使用统一的 list-grid-layout 类实现完美的列对齐
             row.className = `list-grid-layout file-row ${isSelected ? 'selected' : ''}`;
             row.draggable = true;
 
@@ -1923,8 +1774,6 @@
             let lastError = null;
             for (let attempt = 0; attempt < MAX_CHUNK_RETRIES; attempt++) {
                 try {
-                    const token = localStorage.getItem("auth_token") || "";
-
                     const queryUrl = new URL(API + "/upload/chunk");
                     queryUrl.searchParams.append("key", targetKey);
                     queryUrl.searchParams.append("chunkIndex", chunkIndex);
@@ -1933,15 +1782,13 @@
                     const response = await fetch(queryUrl.toString(), {
                         method: "POST",
                         headers: {
-                            "Authorization": `Bearer ${token}`,
                             "Content-Type": "application/octet-stream"
                         },
                         body: chunkBlob,
                         signal: signal,
                     });
 
-                    if (response.status === 401) {
-                        handleLogout();
+                    if (response.status === 401 || response.status === 403) {
                         throw new Error("Unauthorized");
                     }
 
@@ -2032,10 +1879,14 @@
                     body: JSON.stringify({
                         key: targetKey,
                         contentType: file.type || "application/octet-stream",
-                        size: file.size // --- 传入文件大小以供后端检验 ---
+                        size: file.size
                     })
                 });
                 const initData = await initRes.json();
+                
+                if(!initData.success) {
+                     throw new Error(initData.message || "初始化分片失败");
+                }
                 currentUploadId = initData.uploadId;
 
                 const chunks = [];
@@ -2079,7 +1930,7 @@
 
         // ==================== 文件选择和上传入口 ====================
         function openUploadSelect() {
-            if (isGuestMode || currentView === 'starred' || currentView === 'trash') return;
+            if (currentView === 'starred' || currentView === 'trash') return;
             if (isUploading) {
                 showSnackbar("当前有文件正在上传中，请稍候...");
                 return;
@@ -2112,7 +1963,7 @@
 
         // ==================== 文件夹操作 ====================
         function openCreateFolderDialog() {
-            if (isGuestMode || currentView === 'starred' || currentView === 'trash') return;
+            if (currentView === 'starred' || currentView === 'trash') return;
             document.getElementById("new-folder-name").value = "";
             openDialog('folder-dialog');
         }
@@ -2137,7 +1988,6 @@
         // ==================== 右键菜单 ====================
         function openContextMenu(event, key, isFolder, index) {
             event.stopPropagation();
-            if (isGuestMode) return;
 
             selectedKeys.clear();
             selectedKeys.add(key);
@@ -2169,7 +2019,7 @@
                     }
                     menu.innerHTML +=
                         `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
-                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerCopyShareLink()"><span class="material-symbols-outlined">link</span>复制共享链接</div>`;
+                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerCopyShareLink()"><span class="material-symbols-outlined">link</span>复制下载链接</div>`;
                 }
 
                 menu.innerHTML +=
@@ -2203,10 +2053,9 @@
         }
 
         async function triggerCopyShareLink() {
-            const token = localStorage.getItem("auth_token") || "";
             const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
             navigator.clipboard.writeText(url).then(() => {
-                showSnackbar("共享链接已复制到剪贴板");
+                showSnackbar("下载链接已复制到剪贴板");
             }).catch(() => {
                 showSnackbar("复制失败，请手动复制链接");
             });
@@ -2266,14 +2115,12 @@
 
         // ==================== 预览与下载 ====================
         async function triggerPreview() {
-            const token = localStorage.getItem("auth_token") || "";
             const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&preview=1&inline=true`;
             window.open(url, "_blank");
             closeActionMenu();
         }
 
         async function triggerDownload() {
-            const token = localStorage.getItem("auth_token") || "";
             const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
             const a = document.createElement("a");
             a.href = url;
@@ -2527,7 +2374,6 @@
 
         // ==================== 搜索 ====================
         function handleAdvancedSearch() {
-            if (isGuestMode) return;
             const queryStr = document.getElementById("search-input").value.toLowerCase().trim();
             const dropdown = document.getElementById("search-dropdown");
             const countEl = document.getElementById("search-count");
@@ -2563,8 +2409,7 @@
                     dropdown.classList.remove("show");
                     document.getElementById("search-input").value = "";
                     countEl.innerText = "";
-                    const targetFolder = isFolder ? file.key : file.key.substring(0, file.key.lastIndexOf(
-                        "/") + 1);
+                    const targetFolder = isFolder ? file.key : file.key.substring(0, file.key.lastIndexOf("/") + 1);
                     currentView = 'drive';
                     document.getElementById("nav-starred").classList.remove("active");
                     document.getElementById("nav-drive").classList.add("active");
@@ -2636,7 +2481,6 @@
             });
 
             document.addEventListener("keydown", (e) => {
-                if (isGuestMode) return;
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
                 if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
