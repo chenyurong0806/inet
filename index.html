@@ -1281,11 +1281,8 @@
         // ==================== API 工具函数 ====================
         async function fetchAPI(endpoint, options = {}) {
             if (isGuestMode) throw new Error("Unauthorized");
-            const token = localStorage.getItem("auth_token") || "";
-            const headers = { ...(options.headers || {}), "Authorization": `Bearer ${token}` };
             const response = await fetch(API + endpoint, { ...options, headers });
             if (response.status === 401) {
-                localStorage.removeItem("auth_token");
                 enableGuestMode();
                 throw new Error("Unauthorized");
             }
@@ -1346,14 +1343,6 @@
         }
 
         window.addEventListener("DOMContentLoaded", () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const ssoToken = urlParams.get("sso_token");
-            if (ssoToken) {
-                localStorage.setItem("auth_token", ssoToken);
-                const cleanUrl = new URL(window.location.href);
-                cleanUrl.searchParams.delete("sso_token");
-                window.history.replaceState({}, document.title, cleanUrl.toString());
-            }
             setupGlobalListeners();
             fetchGlobalUserInfo();
         });
@@ -2185,7 +2174,7 @@
 
         async function triggerCopyShareLink() {
             const token = localStorage.getItem("auth_token") || "";
-            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&token=${encodeURIComponent(token)}`;
+            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
             navigator.clipboard.writeText(url).then(() => {
                 showSnackbar("共享链接已复制到剪贴板");
             }).catch(() => {
@@ -2249,14 +2238,14 @@
         async function triggerPreview() {
             const token = localStorage.getItem("auth_token") || "";
             // 增加 preview 和 inline 参数，通知后端在浏览器中展现而非强制下载
-            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&token=${encodeURIComponent(token)}&preview=1&inline=true`;
+            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&preview=1&inline=true`;
             window.open(url, "_blank");
             closeActionMenu();
         }
 
         async function triggerDownload() {
             const token = localStorage.getItem("auth_token") || "";
-            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&token=${encodeURIComponent(token)}`;
+            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
             const a = document.createElement("a");
             a.href = url;
             a.download = "";
