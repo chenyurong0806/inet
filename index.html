@@ -1281,7 +1281,7 @@
         // ==================== API 工具函数 ====================
         async function fetchAPI(endpoint, options = {}) {
             if (isGuestMode) throw new Error("Unauthorized");
-            const response = await fetch(API + endpoint, { ...options, headers });
+            const response = await fetch(API + endpoint, { ...options, credentials: "include" });
             if (response.status === 401) {
                 enableGuestMode();
                 throw new Error("Unauthorized");
@@ -1296,7 +1296,7 @@
         function handleLogout() {
             localStorage.removeItem("auth_token");
             document.getElementById("user-menu").classList.remove("show");
-            // 跳转到全局 SSO 登出接口，清理全局登录状态后重定向回首页
+            // 跳转到登出接口，清理全局登录状态后重定向回首页
             window.location.href = `${LOGIN_SYSTEM}/api/logout?redirect=${encodeURIComponent(window.location.origin)}`;
         }
 
