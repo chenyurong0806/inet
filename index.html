@@ -6,7 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iNet Drive</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
 
     <style>
         :root {
@@ -540,8 +542,13 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         .file-list-view {
@@ -1000,7 +1007,8 @@
                 <span class="material-symbols-outlined">menu</span>
             </button>
             <div class="logo-text">
-                <img src="/icon.png" alt="iNet Drive" class="inet-logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0Y1N0MwMCI+PHBhdGggZD0iTTE5IDRIMWMtMS4xMSAwLTIgLjg5LTIgMnYxMmMwIDEuMTEuODkgMiAyIDJoMTRjMS4xMSAwIDItLjg5IDItMlY2YzAtMS4xMS0uODktMi0yLTJ6bTAgMTRIMVY2aDE4djEyeiIvPjxwYXRoIGQ9Ik01IDEwaDR2NGgtNHoiLz48L3N2Zz4='">
+                <img src="/icon.png" alt="iNet Drive" class="inet-logo"
+                    onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0Y1N0MwMCI+PHBhdGggZD0iTTE5IDRIMWMtMS4xMSAwLTIgLjg5LTIgMnYxMmMwIDEuMTEuODkgMiAyIDJoMTRjMS4xMSAwIDItLjg5IDItMlY2YzAtMS4xMS0uODktMi0yLTJ6bTAgMTRIMVY2aDE4djEyeiIvPjxwYXRoIGQ9Ik01IDEwaDR2NGgtNHoiLz48L3N2Zz4='">
                 <span>iNet Drive</span>
             </div>
         </div>
@@ -1009,7 +1017,8 @@
             <div class="search-container">
                 <div class="search-wrapper">
                     <span class="material-symbols-outlined">search</span>
-                    <input type="text" id="search-input" placeholder="搜索关键词" oninput="handleAdvancedSearch()" onfocus="handleAdvancedSearch()">
+                    <input type="text" id="search-input" placeholder="搜索关键词" oninput="handleAdvancedSearch()"
+                        onfocus="handleAdvancedSearch()">
                     <span id="search-count"></span>
                 </div>
                 <div class="search-dropdown" id="search-dropdown"></div>
@@ -1022,6 +1031,11 @@
                     <span id="user-name">加载中...</span>
                 </div>
                 <div class="user-menu" id="user-menu">
+                    <!-- 加回管理账户按钮 -->
+                    <div class="menu-item ripple-btn" onclick="window.open('https://user.chenyurong.qzz.io', '_blank')">
+                        <span class="material-symbols-outlined">manage_accounts</span>管理我的账号
+                    </div>
+
                     <div class="menu-item ripple-btn danger-item" onclick="handleLogout()">
                         <span class="material-symbols-outlined">logout</span>退出登录
                     </div>
@@ -1036,8 +1050,10 @@
         <aside class="sidebar" id="app-drawer">
             <div class="sidebar-inner">
                 <div class="sidebar-header">
-                    <img src="/icon.png" alt="iNet Drive" class="inet-logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0Y1N0MwMCI+PHBhdGggZD0iTTE5IDRIMWMtMS4xMSAwLTIgLjg5LTIgMnYxMmMwIDEuMTEuODkgMiAyIDJoMTRjMS4xMSAwIDItLjg5IDItMlY2YzAtMS4xMS0uODktMi0yLTJ6bTAgMTRIMVY2aDE4djEyeiIvPjxwYXRoIGQ9Ik01IDEwaDR2NGgtNHoiLz48L3N2Zz4='">
-                    <span style="font-size: 20px; font-weight: 700; color: var(--md-sys-color-primary);">iNet Drive</span>
+                    <img src="/icon.png" alt="iNet Drive" class="inet-logo"
+                        onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0Y1N0MwMCI+PHBhdGggZD0iTTE5IDRIMWMtMS4xMSAwLTIgLjg5LTIgMnYxMmMwIDEuMTEuODkgMiAyIDJoMTRjMS4xMSAwIDItLjg5IDItMlY2YzAtMS4xMS0uODktMi0yLTJ6bTAgMTRIMVY2aDE4djEyeiIvPjxwYXRoIGQ9Ik01IDEwaDR2NGgtNHoiLz48L3N2Zz4='">
+                    <span style="font-size: 20px; font-weight: 700; color: var(--md-sys-color-primary);">iNet
+                        Drive</span>
                 </div>
                 <div class="nav-items-container">
                     <div class="nav-item active ripple-btn" onclick="switchView('drive')" id="nav-drive">
@@ -1099,7 +1115,8 @@
                         <button class="icon-btn ripple-btn auth-required" onclick="openUploadSelect()" title="上传文件">
                             <span class="material-symbols-outlined">upload</span>
                         </button>
-                        <button class="icon-btn ripple-btn auth-required" onclick="openCreateFolderDialog()" title="新建文件夹">
+                        <button class="icon-btn ripple-btn auth-required" onclick="openCreateFolderDialog()"
+                            title="新建文件夹">
                             <span class="material-symbols-outlined">create_new_folder</span>
                         </button>
                     </div>
@@ -1142,7 +1159,8 @@
             <div class="move-subtitle" id="move-subtitle-text">项目将被移动到 "我的云盘"</div>
             <div class="move-item-preview">
                 <div class="move-item-icon-box">
-                    <span class="material-symbols-outlined" id="move-preview-icon" style="color: #9C27B0">description</span>
+                    <span class="material-symbols-outlined" id="move-preview-icon"
+                        style="color: #9C27B0">description</span>
                 </div>
                 <span id="move-preview-name">暑假作业</span>
             </div>
@@ -1216,7 +1234,7 @@
             } catch (error) {
                 // 如果没有此接口或出现跨域，则吞掉异常走兜底逻辑
             }
-            
+
             // 兜底 UI
             document.getElementById("user-name").innerText = "我的账户";
             document.getElementById("user-avatar-text").innerText = "U";
@@ -1240,7 +1258,7 @@
             // credentials: "include" 是确保网关鉴权 Cookie 透传到后端的关键
             const response = await fetch(API + endpoint, {
                 ...options,
-                credentials: "include" 
+                credentials: "include"
             });
 
             if (response.status === 401 || response.status === 403) {
@@ -1449,8 +1467,17 @@
             try {
                 const response = await fetchAPI("/list", { method: "GET" });
                 const data = await response.json();
-                
+
                 if (data.success) {
+                    if (data.username) {
+                        const displayUser = data.username.split('@')[0];
+                        const nameEl = document.getElementById("user-name");
+                        const avatarEl = document.getElementById("user-avatar-text");
+                        if (nameEl) nameEl.innerText = displayUser;
+                        if (avatarEl) avatarEl.innerText = displayUser.charAt(0).toUpperCase();
+                    }
+
+
                     if (data.quota) MAX_STORAGE_QUOTA = data.quota;
                     rawFilesData = data.files || [];
                     renderWorkspace();
@@ -1883,9 +1910,9 @@
                     })
                 });
                 const initData = await initRes.json();
-                
-                if(!initData.success) {
-                     throw new Error(initData.message || "初始化分片失败");
+
+                if (!initData.success) {
+                    throw new Error(initData.message || "初始化分片失败");
                 }
                 currentUploadId = initData.uploadId;
 
