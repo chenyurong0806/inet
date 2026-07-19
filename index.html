@@ -1290,7 +1290,7 @@
         }
 
         function redirectToLogin() {
-            window.location.href = `${LOGIN_SYSTEM}/api/sso-check?from=${encodeURIComponent(window.location.href)}`;
+            window.location.href = `${LOGIN_SYSTEM}/?from=${encodeURIComponent(window.location.href)}`;
         }
 
         function handleLogout() {
@@ -1344,8 +1344,41 @@
 
         window.addEventListener("DOMContentLoaded", () => {
             setupGlobalListeners();
-            fetchGlobalUserInfo();
+            checkLoginStatus();
         });
+
+        async function checkLoginStatus() {
+            try {
+                // 1. 通过请求网盘自身的 API 来探测 HttpOnly Cookie 是否有效
+                const response = await fetch(API + "/list", {
+                    method: "GET",
+                    credentials: "include"
+                });
+
+                if (response.status === 401) {
+                    // 未登录：直接进入访客模式
+                    enableGuestMode();
+                } else {
+                    // 已登录：解除访客模式
+                    disableGuestMode();
+
+                    // 顺便解析文件数据并渲染网盘
+                    const data = await response.json();
+                    if (data.quota) MAX_STORAGE_QUOTA = data.quota;
+                    rawFilesData = data.files || [];
+
+                    renderWorkspace();
+                    updateStorageQuotaUI();
+
+                    // 确认已登录后，再去请求用户信息渲染头像
+                    fetchGlobalUserInfo();
+                }
+            } catch (error) {
+                console.error("检查登录状态异常，进入访客模式", error);
+                enableGuestMode();
+            }
+        }
+
 
         // ==================== 存储配额计算与 UI 更新 ====================
         function calculateTotalSize() {
@@ -1547,33 +1580,7 @@
         // ==================== 文件列表获取与渲染 ====================
         async function fetchFileList() {
             if (isGuestMode) return;
-            try {
-                const res = await fetchAPI("/list");
-                const data = await res.json();
-
-                // --- 新增：读取后端的动态限额 ---
-                if (data.quota) {
-                    MAX_STORAGE_QUOTA = data.quota;
-                }
-                // -----------------------------
-
-                rawFilesData = data.files || [];
-
-                const allKeys = new Set(rawFilesData.map(f => f.key));
-                let starredChanged = false;
-                starredKeys.forEach(k => {
-                    if (!allKeys.has(k) && !allKeys.has(k + '/')) {
-                        starredKeys.delete(k);
-                        starredChanged = true;
-                    }
-                });
-                if (starredChanged) saveStarredKeys();
-
-                renderWorkspace();
-                updateStorageQuotaUI();
-            } catch (err) {
-                if (err.message !== "Unauthorized") showSnackbar("获取文件列表失败");
-            }
+            await checkLoginStatus();
         }
 
         function saveStarredKeys() {
