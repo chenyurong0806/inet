@@ -1279,24 +1279,36 @@
         }
 
         // ==================== API 工具函数 ====================
+        // 统一的 API 封装（附带 Token）
         async function fetchAPI(endpoint, options = {}) {
-            if (isGuestMode) throw new Error("Unauthorized");
-            const response = await fetch(API + endpoint, { ...options, credentials: "include" });
+            const token = localStorage.getItem("auth_token") || "";
+            if (!token) {
+                redirectToLogin();
+                throw new Error("Unauthorized");
+            }
+
+            const headers = options.headers || {};
+            headers["Authorization"] = `Bearer ${token}`; // 自动附加 Token
+
+            const response = await fetch(API + endpoint, {
+                ...options,
+                headers
+            });
+
             if (response.status === 401) {
-                enableGuestMode();
+                localStorage.removeItem("auth_token");
+                redirectToLogin();
                 throw new Error("Unauthorized");
             }
             return response;
         }
 
         function redirectToLogin() {
-            window.location.href = `${LOGIN_SYSTEM}/?from=${encodeURIComponent(window.location.href)}`;
+            window.location.href = `${LOGIN_SYSTEM}/?from=${encodeURIComponent(window.location.origin)}`;
         }
 
         function handleLogout() {
             localStorage.removeItem("auth_token");
-            document.getElementById("user-menu").classList.remove("show");
-            // 跳转到登出接口，清理全局登录状态后重定向回首页
             window.location.href = `${LOGIN_SYSTEM}/api/logout?redirect=${encodeURIComponent(window.location.origin)}`;
         }
 
@@ -1348,37 +1360,65 @@
         });
 
         async function checkLoginStatus() {
+            // 1. 检查 URL 中是否有登录系统跳回来带的 token (兼容 token 或 sso_token)
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get("token") || urlParams.get("sso_token");
+
+            if (urlToken) {
+                localStorage.setItem("auth_token", urlToken);
+                // 清理 URL，隐藏 token
+                window.history.replaceState(null, '', window.location.origin + window.location.pathname);
+            }
+
+            const token = localStorage.getItem("auth_token");
+            if (!token) {
+                redirectToLogin();
+                return;
+            }
+
+            // 2. 网盘只需要去调用用户信息
             try {
-                // 1. 通过请求网盘自身的 API 来探测 HttpOnly Cookie 是否有效
-                const response = await fetch(API + "/list", {
+                const response = await fetch(`${LOGIN_SYSTEM}/api/userinfo`, {
                     method: "GET",
-                    credentials: "include"
+                    headers: { "Authorization": `Bearer ${token}` }
                 });
 
                 if (response.status === 401) {
-                    // 未登录：直接进入访客模式
-                    enableGuestMode();
+                    localStorage.removeItem("auth_token");
+                    redirectToLogin();
+                    return;
+                }
+
+                const result = await response.json();
+                if (result.loggedIn) {
+                    isGuestMode = false;
+                    document.getElementById("user-profile-box").style.display = "flex";
+                    document.getElementById("guest-login-box").style.display = "none";
+                    updateActionButtons();
+
+                    // 渲染用户信息
+                    const usernameEl = document.getElementById("user-name");
+                    const avatarEl = document.getElementById("user-avatar-text");
+                    if (usernameEl && result.data.username) usernameEl.innerText = result.data.username;
+                    if (avatarEl) {
+                        if (result.data.avatar) {
+                            avatarEl.innerHTML = `<img src="${result.data.avatar}" alt="avatar" crossorigin="anonymous">`;
+                        } else if (result.data.username) {
+                            avatarEl.innerText = result.data.username.charAt(0).toUpperCase();
+                        }
+                    }
+
+                    // 3. 用户信息拉取成功后，开始加载网盘文件
+                    await fetchFileList();
                 } else {
-                    // 已登录：解除访客模式
-                    disableGuestMode();
-
-                    // 顺便解析文件数据并渲染网盘
-                    const data = await response.json();
-                    if (data.quota) MAX_STORAGE_QUOTA = data.quota;
-                    rawFilesData = data.files || [];
-
-                    renderWorkspace();
-                    updateStorageQuotaUI();
-
-                    // 确认已登录后，再去请求用户信息渲染头像
-                    fetchGlobalUserInfo();
+                    localStorage.removeItem("auth_token");
+                    redirectToLogin();
                 }
             } catch (error) {
-                console.error("检查登录状态异常，进入访客模式", error);
-                enableGuestMode();
+                console.error("验证登录状态失败", error);
+                redirectToLogin();
             }
         }
-
 
         // ==================== 存储配额计算与 UI 更新 ====================
         function calculateTotalSize() {
@@ -1579,8 +1619,16 @@
 
         // ==================== 文件列表获取与渲染 ====================
         async function fetchFileList() {
-            if (isGuestMode) return;
-            await checkLoginStatus();
+            try {
+                const response = await fetchAPI("/list", { method: "GET" });
+                const data = await response.json();
+                if (data.quota) MAX_STORAGE_QUOTA = data.quota;
+                rawFilesData = data.files || [];
+                renderWorkspace();
+                updateStorageQuotaUI();
+            } catch (error) {
+                console.error("获取文件列表异常", error);
+            }
         }
 
         function saveStarredKeys() {
@@ -2181,7 +2229,7 @@
 
         async function triggerCopyShareLink() {
             const token = localStorage.getItem("auth_token") || "";
-            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
+            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&token=${token}`;
             navigator.clipboard.writeText(url).then(() => {
                 showSnackbar("共享链接已复制到剪贴板");
             }).catch(() => {
@@ -2244,15 +2292,14 @@
         // ==================== 预览与下载 ====================
         async function triggerPreview() {
             const token = localStorage.getItem("auth_token") || "";
-            // 增加 preview 和 inline 参数，通知后端在浏览器中展现而非强制下载
-            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&preview=1&inline=true`;
+            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&preview=1&inline=true&token=${token}`;
             window.open(url, "_blank");
             closeActionMenu();
         }
 
         async function triggerDownload() {
             const token = localStorage.getItem("auth_token") || "";
-            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
+            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&token=${token}`;
             const a = document.createElement("a");
             a.href = url;
             a.download = "";
