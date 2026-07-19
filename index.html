@@ -1468,23 +1468,22 @@
                 const response = await fetchAPI("/list", { method: "GET" });
                 const data = await response.json();
 
-                if (data.success) {
-                    if (data.username) {
-                        const displayUser = data.username.split('@')[0];
-                        const nameEl = document.getElementById("user-name");
-                        const avatarEl = document.getElementById("user-avatar-text");
-                        if (nameEl) nameEl.innerText = displayUser;
-                        if (avatarEl) avatarEl.innerText = displayUser.charAt(0).toUpperCase();
-                    }
+                // === 新增：解析后端传来的用户名并更新页面 ===
+                if (data.username) {
+                    // 如果用户名是邮箱，截取 @ 前面的部分；如果不是，则正常显示
+                    const displayUser = data.username.split('@')[0];
+                    const nameEl = document.getElementById("user-name");
+                    const avatarEl = document.getElementById("user-avatar-text");
 
-
-                    if (data.quota) MAX_STORAGE_QUOTA = data.quota;
-                    rawFilesData = data.files || [];
-                    renderWorkspace();
-                    updateStorageQuotaUI();
-                } else {
-                    showSnackbar(data.message || "获取列表失败");
+                    if (nameEl) nameEl.innerText = displayUser;
+                    if (avatarEl) avatarEl.innerText = displayUser.charAt(0).toUpperCase();
                 }
+                // ============================================
+
+                if (data.quota) MAX_STORAGE_QUOTA = data.quota;
+                rawFilesData = data.files || [];
+                renderWorkspace();
+                updateStorageQuotaUI();
             } catch (error) {
                 console.error("获取文件列表异常", error);
             }
