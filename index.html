@@ -1281,22 +1281,12 @@
         // ==================== API 工具函数 ====================
         // 统一的 API 封装（附带 Token）
         async function fetchAPI(endpoint, options = {}) {
-            const token = localStorage.getItem("auth_token") || "";
-            if (!token) {
-                redirectToLogin();
-                throw new Error("Unauthorized");
-            }
-
-            const headers = options.headers || {};
-            headers["Authorization"] = `Bearer ${token}`; // 自动附加 Token
-
             const response = await fetch(API + endpoint, {
                 ...options,
-                headers
+                credentials: "include" // 关键：让浏览器自动带上共享的 Cookie
             });
 
             if (response.status === 401) {
-                localStorage.removeItem("auth_token");
                 redirectToLogin();
                 throw new Error("Unauthorized");
             }
@@ -1304,99 +1294,30 @@
         }
 
         function redirectToLogin() {
-            window.location.href = `${LOGIN_SYSTEM}/?from=${encodeURIComponent(window.location.origin)}`;
+            // 强制跳转到登录系统，把当前页作为 from 参数传过去，方便登入后跳回
+            window.location.href = `${LOGIN_SYSTEM}/?from=${encodeURIComponent(window.location.href)}`;
         }
 
         function handleLogout() {
-            localStorage.removeItem("auth_token");
+            // 退出时让浏览器跳回登录系统的 logout 接口，由登录系统负责清除跨域 Cookie
             window.location.href = `${LOGIN_SYSTEM}/api/logout?redirect=${encodeURIComponent(window.location.origin)}`;
         }
 
         // ==================== 用户信息与初始化 ====================
         async function fetchGlobalUserInfo() {
-            const token = localStorage.getItem("auth_token") || "";
-            if (!token) {
-                enableGuestMode();
-                return;
-            }
             try {
                 const response = await fetch(`${LOGIN_SYSTEM}/api/userinfo`, {
                     method: "GET",
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-                if (response.status === 401) {
-                    localStorage.removeItem("auth_token");
-                    enableGuestMode();
-                    return;
-                }
-                const result = await response.json();
-                if (result.loggedIn) {
-                    disableGuestMode();
-                    const usernameEl = document.getElementById("user-name");
-                    const avatarEl = document.getElementById("user-avatar-text");
-                    if (usernameEl && result.data.username) usernameEl.innerText = result.data.username;
-                    if (avatarEl) {
-                        if (result.data.avatar) {
-                            avatarEl.innerHTML =
-                                `<img src="${result.data.avatar}" alt="avatar" crossorigin="anonymous">`;
-                        } else if (result.data.username) {
-                            avatarEl.innerText = result.data.username.charAt(0).toUpperCase();
-                        }
-                    }
-                    fetchFileList();
-                } else {
-                    localStorage.removeItem("auth_token");
-                    enableGuestMode();
-                }
-            } catch (error) {
-                showSnackbar("获取用户信息失败，已进入访客模式");
-                enableGuestMode();
-            }
-        }
-
-        window.addEventListener("DOMContentLoaded", () => {
-            setupGlobalListeners();
-            checkLoginStatus();
-        });
-
-        async function checkLoginStatus() {
-            // 1. 检查 URL 中是否有登录系统跳回来带的 token (兼容 token 或 sso_token)
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlToken = urlParams.get("token") || urlParams.get("sso_token");
-
-            if (urlToken) {
-                localStorage.setItem("auth_token", urlToken);
-                // 清理 URL，隐藏 token
-                window.history.replaceState(null, '', window.location.origin + window.location.pathname);
-            }
-
-            const token = localStorage.getItem("auth_token");
-            if (!token) {
-                redirectToLogin();
-                return;
-            }
-
-            // 2. 网盘只需要去调用用户信息
-            try {
-                const response = await fetch(`${LOGIN_SYSTEM}/api/userinfo`, {
-                    method: "GET",
-                    headers: { "Authorization": `Bearer ${token}` }
+                    credentials: "include" // 请求登录系统同样带上跨域 Cookie
                 });
 
                 if (response.status === 401) {
-                    localStorage.removeItem("auth_token");
                     redirectToLogin();
                     return;
                 }
 
                 const result = await response.json();
                 if (result.loggedIn) {
-                    isGuestMode = false;
-                    document.getElementById("user-profile-box").style.display = "flex";
-                    document.getElementById("guest-login-box").style.display = "none";
-                    updateActionButtons();
-
-                    // 渲染用户信息
                     const usernameEl = document.getElementById("user-name");
                     const avatarEl = document.getElementById("user-avatar-text");
                     if (usernameEl && result.data.username) usernameEl.innerText = result.data.username;
@@ -1407,15 +1328,44 @@
                             avatarEl.innerText = result.data.username.charAt(0).toUpperCase();
                         }
                     }
-
-                    // 3. 用户信息拉取成功后，开始加载网盘文件
-                    await fetchFileList();
-                } else {
-                    localStorage.removeItem("auth_token");
-                    redirectToLogin();
                 }
             } catch (error) {
-                console.error("验证登录状态失败", error);
+                console.error("获取用户信息失败", error);
+            }
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            setupGlobalListeners();
+            checkLoginStatus();
+        });
+
+        async function checkLoginStatus() {
+            try {
+                // 直接请求网盘后端 /list 接口，测试 Cookie 是否有效
+                const response = await fetch(API + "/list", {
+                    method: "GET",
+                    credentials: "include" // 自动携带 Cookie
+                });
+
+                if (response.status === 401) {
+                    // 401 说明 Cookie 无效或不存在，直接强制跳转登录
+                    redirectToLogin();
+                } else {
+                    // 请求成功，说明 Cookie 验证通过，已登录
+                    disableGuestMode();
+
+                    const data = await response.json();
+                    if (data.quota) MAX_STORAGE_QUOTA = data.quota;
+                    rawFilesData = data.files || [];
+
+                    renderWorkspace();
+                    updateStorageQuotaUI();
+
+                    // 确认登录后，再去请求用户信息渲染头像
+                    fetchGlobalUserInfo();
+                }
+            } catch (error) {
+                console.error("检查登录状态异常", error);
                 redirectToLogin();
             }
         }
@@ -2229,7 +2179,7 @@
 
         async function triggerCopyShareLink() {
             const token = localStorage.getItem("auth_token") || "";
-            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&token=${token}`;
+            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
             navigator.clipboard.writeText(url).then(() => {
                 showSnackbar("共享链接已复制到剪贴板");
             }).catch(() => {
@@ -2292,14 +2242,14 @@
         // ==================== 预览与下载 ====================
         async function triggerPreview() {
             const token = localStorage.getItem("auth_token") || "";
-            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&preview=1&inline=true&token=${token}`;
+            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&preview=1&inline=true`;
             window.open(url, "_blank");
             closeActionMenu();
         }
 
         async function triggerDownload() {
             const token = localStorage.getItem("auth_token") || "";
-            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}&token=${token}`;
+            const url = `https://file.chenyurong.qzz.io/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
             const a = document.createElement("a");
             a.href = url;
             a.download = "";
