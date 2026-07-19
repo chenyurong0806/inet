@@ -1340,18 +1340,30 @@
         });
 
         async function checkLoginStatus() {
+            // 1. 核心修复：拦截从登录系统跳回来时地址栏里的 token
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get("token") || urlParams.get("sso_token");
+
+            if (urlToken) {
+                // 由前端负责在根域名种下共享 Cookie (后续的 fetch 和下载链接会自动携带)
+                document.cookie = `auth_token=${encodeURIComponent(urlToken)}; domain=chenyurong.qzz.io; path=/; max-age=2592000; Secure; SameSite=Lax`;
+
+                // 抹除地址栏上的 token 参数，保持网址干净
+                window.history.replaceState(null, '', window.location.origin + window.location.pathname);
+            }
+
             try {
-                // 直接请求网盘后端 /list 接口，测试 Cookie 是否有效
+                // 2. 发起请求，测试 Cookie 是否有效
                 const response = await fetch(API + "/list", {
                     method: "GET",
-                    credentials: "include" // 自动携带 Cookie
+                    credentials: "include" // 自动携带刚刚种下的 Cookie
                 });
 
                 if (response.status === 401) {
-                    // 401 说明 Cookie 无效或不存在，直接强制跳转登录
+                    // 彻底没救了才跳去登录页
                     redirectToLogin();
                 } else {
-                    // 请求成功，说明 Cookie 验证通过，已登录
+                    // 登录成功！
                     disableGuestMode();
 
                     const data = await response.json();
@@ -1361,7 +1373,7 @@
                     renderWorkspace();
                     updateStorageQuotaUI();
 
-                    // 确认登录后，再去请求用户信息渲染头像
+                    // 去获取头像和用户名
                     fetchGlobalUserInfo();
                 }
             } catch (error) {
