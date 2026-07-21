@@ -757,6 +757,7 @@
             font-size: 16px;
             outline: none;
             color: var(--md-sys-color-on-surface);
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .md-input:focus {
@@ -780,10 +781,36 @@
             cursor: pointer;
             color: var(--md-sys-color-primary);
             font-size: 14px;
+            transition: background-color 0.2s;
         }
 
         .btn-text:hover {
             background-color: rgba(245, 124, 0, 0.08);
+        }
+
+        .btn-filled {
+            border: none;
+            background-color: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            padding: 10px 24px;
+            border-radius: var(--md-shape-full);
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: var(--md-transition);
+        }
+        
+        .btn-filled:hover {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            background-color: #f78b1e;
+        }
+
+        .btn-filled:active {
+            box-shadow: none;
         }
 
         #move-dialog .dialog-card {
@@ -949,6 +976,7 @@
             .drawer-overlay.show {
                 opacity: 1;
                 pointer-events: auto;
+                background-color: rgba(0,0,0,0.2);
             }
 
             .main-workspace {
@@ -1046,7 +1074,7 @@
 
     <header class="top-app-bar">
         <div class="top-bar-left">
-            <button class="icon-btn ripple-btn" onclick="toggleDrawer()">
+            <button class="icon-btn ripple-btn" onclick="toggleDrawer()" id="sidebar-toggle-btn">
                 <span class="material-symbols-outlined">menu</span>
             </button>
             <div class="logo-text">
@@ -1074,7 +1102,7 @@
                     <span id="user-name">加载中...</span>
                 </div>
                 <div class="user-menu" id="user-menu">
-                    <!-- 加回管理账户按钮 -->
+                    <!-- 管理账户按钮 -->
                     <div class="menu-item ripple-btn" onclick="window.open('https://user.chenyurong.qzz.io', '_blank')">
                         <span class="material-symbols-outlined">manage_accounts</span>管理我的账号
                     </div>
@@ -1153,7 +1181,7 @@
                     <div>名称</div>
                     <div>修改日期</div>
                     <div>大小</div>
-                    <div class="list-header-actions">
+                    <div class="list-header-actions" id="list-header-actions">
                         <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(this)">
                         <button class="icon-btn ripple-btn auth-required" onclick="openUploadSelect()" title="上传文件">
                             <span class="material-symbols-outlined">upload</span>
@@ -1197,7 +1225,8 @@
         <div class="dialog-card">
             <div class="move-dialog-header">
                 <button class="btn-text ripple-btn" onclick="closeDialog('move-dialog')">取消</button>
-                <button class="btn-text ripple-btn submit" onclick="triggerMoveFile()">移动</button>
+                <div id="move-dialog-title" style="font-weight: 500; font-size: 16px;">移动到</div>
+                <button class="btn-text ripple-btn submit" id="move-submit-btn" onclick="triggerMoveFile()">移动</button>
             </div>
             <div class="move-subtitle" id="move-subtitle-text">项目将被移动到 "我的云盘"</div>
             <div class="move-item-preview">
@@ -1211,6 +1240,7 @@
             </div>
         </div>
     </div>
+
     <!-- 1. 提取码验证弹窗 -->
     <div class="dialog-overlay" id="share-auth-dialog">
         <div class="dialog-card">
@@ -1237,8 +1267,6 @@
             <div id="share-create-desc"
                 style="font-size:14px; color:var(--md-sys-color-on-surface-variant); margin-bottom:16px;">复制下面的链接发给好友：
             </div>
-            <div style="font-size:14px; color:var(--md-sys-color-on-surface-variant); margin-bottom:16px;">复制下面的链接发给好友：
-            </div>
 
             <div
                 style="background:var(--md-sys-color-surface-container); padding:12px; border-radius:var(--md-shape-medium); display:flex; align-items:center; margin-bottom:16px;">
@@ -1252,6 +1280,7 @@
             </div>
         </div>
     </div>
+    
     <div class="snackbar" id="global-snackbar">操作成功</div>
 
     <script>
@@ -1284,6 +1313,7 @@
         let folderTreeData = {};
         let expandedFolders = new Set([""]);
         let targetMoveFolder = "";
+        let currentDialogMode = 'move'; // 'move' or 'save'
 
         let activeUploadAborter = null;
         let isUploading = false;
@@ -1294,6 +1324,10 @@
         let currentShareId = "";
         let currentShareCode = "";
         let shareRootName = "";
+        let shareUser = ""; // 分享者名字
+        let isLoggedIn = false;
+        let myDriveTreeData = {}; // 我的云盘结构（转存时用）
+
 
         // ==================== 初始化与用户逻辑 ====================
         window.addEventListener("DOMContentLoaded", () => {
@@ -1305,6 +1339,7 @@
             if (shareId) {
                 isShareMode = true;
                 currentShareId = shareId;
+                fetchUserInfo(true); // Attempt to fetch auth info but quietly
                 initShareMode(); // 初始化纯净UI并弹起提取码框
             } else {
                 initApp(); // 正常走登录后的应用逻辑
@@ -1313,12 +1348,12 @@
 
         async function initApp() {
             // 1. 尝试获取用户信息，展示在左上角
-            fetchUserInfo();
+            await fetchUserInfo();
             // 2. 假设已由外部系统(CF Access等)验证，直接请求列表
             await fetchFileList();
         }
 
-        async function fetchUserInfo() {
+        async function fetchUserInfo(quietMode = false) {
             try {
                 // 如果使用 Cloudflare Access 网关，尝试调用其凭据接口获取信息
                 const res = await fetch('/.cdn-cgi/access/get-identity');
@@ -1326,8 +1361,10 @@
                     const data = await res.json();
                     const email = data.email || "";
                     if (email) {
-                        document.getElementById("user-name").innerText = email.split('@')[0];
-                        document.getElementById("user-avatar-text").innerText = email.charAt(0).toUpperCase();
+                        const displayName = email.split('@')[0];
+                        document.getElementById("user-name").innerText = displayName;
+                        document.getElementById("user-avatar-text").innerText = displayName.charAt(0).toUpperCase();
+                        isLoggedIn = true;
                         return;
                     }
                 }
@@ -1335,9 +1372,11 @@
                 // 如果没有此接口或出现跨域，则吞掉异常走兜底逻辑
             }
 
-            // 兜底 UI
-            document.getElementById("user-name").innerText = "我的账户";
-            document.getElementById("user-avatar-text").innerText = "U";
+            if (!quietMode) {
+                // 兜底 UI
+                document.getElementById("user-name").innerText = "我的账户";
+                document.getElementById("user-avatar-text").innerText = "U";
+            }
         }
 
         function handleLogout() {
@@ -1362,7 +1401,6 @@
             });
 
             if (response.status === 401 || response.status === 403) {
-                showSnackbar("认证已失效或无权限，请刷新页面重新登录");
                 throw new Error("Unauthorized");
             }
             return response;
@@ -1465,6 +1503,10 @@
                 await fetchFileList();
             } catch (e) {
                 if (e.message !== "Unauthorized") showSnackbar("操作失败: " + e.message);
+                else {
+                    showSnackbar("登录态失效，正前往登录...");
+                    setTimeout(() => window.location.reload(), 1500);
+                }
             }
         }
 
@@ -1535,6 +1577,7 @@
 
         // ==================== UI 交互 ====================
         function toggleDrawer() {
+            if (isShareMode) return;
             const drawer = document.getElementById("app-drawer");
             const overlay = document.getElementById("drawer-overlay");
             if (window.innerWidth >= 900) {
@@ -1568,17 +1611,16 @@
                 const response = await fetchAPI("/list", { method: "GET" });
                 const data = await response.json();
 
-                // === 新增：解析后端传来的用户名并更新页面 ===
+                // 解析后端传来的用户名并更新页面
                 if (data.username) {
-                    // 如果用户名是邮箱，截取 @ 前面的部分；如果不是，则正常显示
                     const displayUser = data.username.split('@')[0];
                     const nameEl = document.getElementById("user-name");
                     const avatarEl = document.getElementById("user-avatar-text");
 
                     if (nameEl) nameEl.innerText = displayUser;
                     if (avatarEl) avatarEl.innerText = displayUser.charAt(0).toUpperCase();
+                    isLoggedIn = true;
                 }
-                // ============================================
 
                 if (data.quota) MAX_STORAGE_QUOTA = data.quota;
                 rawFilesData = data.files || [];
@@ -1730,7 +1772,7 @@
         function createRowNode(name, date, size, icon, key, isFolder, index, isSelected, isStarred, showFullPath) {
             const row = document.createElement("div");
             row.className = `list-grid-layout file-row ${isSelected ? 'selected' : ''}`;
-            row.draggable = true;
+            row.draggable = !isShareMode; // Cannot drag during share mode
 
             const displayPath = showFullPath ?
                 `<div style="font-size:11px; color:var(--md-sys-color-outline); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${key}">${key}</div>` : '';
@@ -1796,35 +1838,37 @@
                 openContextMenu(e, key, isFolder, index);
             });
 
-            row.addEventListener("dragstart", (e) => {
-                if (!selectedKeys.has(key)) {
-                    selectedKeys.clear();
-                    selectedKeys.add(key);
-                    lastSelectedIndex = index;
-                    renderWorkspace();
-                }
-                const itemsToMove = currentRenderedItems.filter(item => selectedKeys.has(item.key));
-                e.dataTransfer.setData("application/json", JSON.stringify({ items: itemsToMove }));
-                e.dataTransfer.effectAllowed = "move";
-            });
+            if (!isShareMode) {
+                row.addEventListener("dragstart", (e) => {
+                    if (!selectedKeys.has(key)) {
+                        selectedKeys.clear();
+                        selectedKeys.add(key);
+                        lastSelectedIndex = index;
+                        renderWorkspace();
+                    }
+                    const itemsToMove = currentRenderedItems.filter(item => selectedKeys.has(item.key));
+                    e.dataTransfer.setData("application/json", JSON.stringify({ items: itemsToMove }));
+                    e.dataTransfer.effectAllowed = "move";
+                });
 
-            if (isFolder) {
-                row.addEventListener("dragover", (e) => {
-                    e.preventDefault();
-                    row.classList.add("drag-over");
-                });
-                row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
-                row.addEventListener("drop", (e) => {
-                    e.preventDefault();
-                    row.classList.remove("drag-over");
-                    try {
-                        const source = JSON.parse(e.dataTransfer.getData("application/json"));
-                        const items = source.items || [];
-                        if (items.length > 0) {
-                            executeBatchMoveAPI(items, key);
-                        }
-                    } catch (err) { }
-                });
+                if (isFolder) {
+                    row.addEventListener("dragover", (e) => {
+                        e.preventDefault();
+                        row.classList.add("drag-over");
+                    });
+                    row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+                    row.addEventListener("drop", (e) => {
+                        e.preventDefault();
+                        row.classList.remove("drag-over");
+                        try {
+                            const source = JSON.parse(e.dataTransfer.getData("application/json"));
+                            const items = source.items || [];
+                            if (items.length > 0) {
+                                executeBatchMoveAPI(items, key);
+                            }
+                        } catch (err) { }
+                    });
+                }
             }
             return row;
         }
@@ -1832,16 +1876,19 @@
         function renderBreadcrumbs() {
             const box = document.getElementById("breadcrumbs");
 
-            // 如果处于分享访客模式，头部显示分享名称
+            // 如果处于分享访客模式，头部显示分享名称和人
             if (isShareMode) {
-                box.innerHTML = `<span class="crumb ripple-btn" onclick="jumpToPath('')"><span class="material-symbols-outlined" style="vertical-align:middle; font-size:20px; margin-right:4px;">share</span>${shareRootName || '分享的文件'}</span>`;
-                if (!currentPath) return;
-                const parts = currentPath.split("/").filter(p => p);
-                let buildPath = "";
-                parts.forEach((part) => {
-                    buildPath += part + "/";
-                    box.innerHTML += `<span class="material-symbols-outlined crumb-separator">chevron_right</span><span class="crumb ripple-btn" onclick="jumpToPath('${buildPath}')">${part}</span>`;
-                });
+                box.innerHTML = `<span style="font-size: 14px; color: var(--md-sys-color-primary); background: var(--md-sys-color-primary-container); padding: 4px 12px; border-radius: 16px; margin-right: 16px; display: flex; align-items: center; gap: 4px;"><span class="material-symbols-outlined" style="font-size: 18px;">account_circle</span>来自 ${shareUser} 的分享</span>`;
+                box.innerHTML += `<span class="crumb ripple-btn" onclick="jumpToPath('')"><span class="material-symbols-outlined" style="vertical-align:middle; font-size:20px; margin-right:4px;">folder_shared</span>${shareRootName || '分享的文件'}</span>`;
+                
+                if (currentPath) {
+                    const parts = currentPath.split("/").filter(p => p);
+                    let buildPath = "";
+                    parts.forEach((part) => {
+                        buildPath += part + "/";
+                        box.innerHTML += `<span class="material-symbols-outlined crumb-separator">chevron_right</span><span class="crumb ripple-btn" onclick="jumpToPath('${buildPath}')">${part}</span>`;
+                    });
+                }
                 return;
             }
 
@@ -1915,7 +1962,7 @@
             let lastError = null;
             for (let attempt = 0; attempt < MAX_CHUNK_RETRIES; attempt++) {
                 try {
-                    const queryUrl = new URL(API + "/upload/chunk");
+                    const queryUrl = new URL(API + "/upload/chunk", window.location.origin);
                     queryUrl.searchParams.append("key", targetKey);
                     queryUrl.searchParams.append("chunkIndex", chunkIndex);
                     queryUrl.searchParams.append("uploadId", uploadId);
@@ -1927,6 +1974,7 @@
                         },
                         body: chunkBlob,
                         signal: signal,
+                        credentials: "include"
                     });
 
                     if (response.status === 401 || response.status === 403) {
@@ -2069,7 +2117,6 @@
             }
         }
 
-        // ==================== 文件选择和上传入口 ====================
         function openUploadSelect() {
             if (currentView === 'starred' || currentView === 'trash') return;
             if (isUploading) {
@@ -2102,7 +2149,6 @@
             await uploadFileInChunks(file, targetKey);
         }
 
-        // ==================== 文件夹操作 ====================
         function openCreateFolderDialog() {
             if (currentView === 'starred' || currentView === 'trash') return;
             document.getElementById("new-folder-name").value = "";
@@ -2143,7 +2189,7 @@
                 menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerRestore()"><span class="material-symbols-outlined">restore_from_trash</span>恢复文件</div>`;
                 menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete_forever</span>彻底删除</div>`;
             } else if (isShareMode) {
-                // === 极简分享模式下的菜单：只能打开、下载或预览 ===
+                // === 极简分享模式下的菜单：只能打开、下载、预览或转存 ===
                 if (isFolder) {
                     menu.innerHTML += `<div class="menu-item ripple-btn" onclick="jumpToPath('${key}'); closeActionMenu();"><span class="material-symbols-outlined">folder_open</span>打开文件夹</div>`;
                 } else {
@@ -2154,6 +2200,7 @@
                     }
                     menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerShareDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
                 }
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openSaveDialog()"><span class="material-symbols-outlined" style="color:var(--md-sys-color-primary);">cloud_download</span>转存到我的网盘</div>`;
             } else {
                 // === 正常模式下的菜单 (主人状态) ===
                 const starText = starredKeys.has(key) ? "取消星标" : "添加星标";
@@ -2170,9 +2217,7 @@
                     menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
                 }
 
-                // 将原先的 triggerCopyShareLink 替换为专属分享链接
                 menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerCreateShare()"><span class="material-symbols-outlined" style="color:var(--md-sys-color-primary);">share</span>加密分享</div>`;
-
                 menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCopy(); closeActionMenu();"><span class="material-symbols-outlined">content_copy</span>复制</div>`;
                 menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCut(); closeActionMenu();"><span class="material-symbols-outlined">content_cut</span>剪切</div>`;
                 if (clipboard.type && clipboard.items.length > 0) {
@@ -2194,17 +2239,26 @@
             if (leftPos + menu.offsetWidth > window.innerWidth) leftPos = window.innerWidth - menu.offsetWidth - 10;
             menu.style.left = `${leftPos}px`;
         }
-        // ==================== [新增] 网盘式分享业务逻辑 ====================
+
+        // ==================== 网盘式分享业务逻辑 ====================
 
         // 1. 初始化访客专属纯净 UI 界面
         function initShareMode() {
-            // 强制隐藏主人专属的面板 (侧边栏、搜索、上传新建等操作)
+            // 隐藏主人专属的面板 (侧边栏、搜索、上传新建等操作)
             if (window.innerWidth >= 900) document.getElementById("app-drawer").style.display = "none";
             document.querySelector(".main-workspace").style.margin = "0";
             document.querySelector(".main-workspace").style.borderRadius = "0";
             document.querySelector(".search-container").style.display = "none";
             document.querySelector(".history-actions").style.display = "none";
-            document.querySelector(".list-header-actions").style.display = "none";
+            document.getElementById("sidebar-toggle-btn").style.display = "none";
+
+            // 替换列表操作区为全部转存
+            const listActions = document.getElementById("list-header-actions");
+            listActions.innerHTML = `
+                <button class="btn-filled ripple-btn" onclick="openSaveDialog(true)" style="height: 36px; padding: 0 16px;">
+                    <span class="material-symbols-outlined" style="font-size:18px;">cloud_download</span>全部转存
+                </button>
+            `;
 
             // 替换顶部头像为 "退出分享"
             document.getElementById("user-profile-box").style.display = "none";
@@ -2225,7 +2279,7 @@
             if (!codeInput || codeInput.length !== 4) return showSnackbar("请输入4位提取码");
 
             try {
-                // 使用原生的 fetch 而不是 fetchAPI，避免把访客拦截重定向去登录系统
+                // 使用原生 fetch，避免未登录抛错去拦截重定向
                 const res = await fetch("/api/share/list", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -2242,12 +2296,13 @@
                 closeDialog('share-auth-dialog');
                 showSnackbar("提取成功");
 
-                // 我们利用后端递归拿到的相对路径文件流，直接塞进原始的网盘渲染器中
+                // 利用后端递归拿到的相对路径文件流，直接塞进原始的网盘渲染器中
                 shareRootName = data.shareName;
+                shareUser = data.shareUser ? data.shareUser.split('@')[0] : "分享者";
                 rawFilesData = data.files.map(f => ({ ...f, key: f.key }));
 
                 currentPath = "";
-                renderWorkspace(); // 完美复用文件夹切换、面包屑渲染！
+                renderWorkspace(); 
             } catch (e) {
                 showSnackbar("网络异常，验证失败");
             }
@@ -2469,10 +2524,10 @@
             closeActionMenu();
         }
 
-        // ==================== 移动对话框 ====================
-        function parseFolderStructure() {
+        // ==================== 移动对话框与转存对话框 ====================
+        function parseFolderStructure(dataSource = rawFilesData) {
             const tree = { name: "我的云盘", key: "", children: {} };
-            rawFilesData.forEach(item => {
+            dataSource.forEach(item => {
                 const key = item.key;
                 if (key.startsWith('.trash/')) return;
                 const isFolder = key.endsWith('/');
@@ -2480,7 +2535,7 @@
                     const parts = key.split('/').filter(Boolean);
                     let currentLevel = tree.children;
                     let currentPathBuild = "";
-                    parts.forEach((part, i) => {
+                    parts.forEach((part) => {
                         currentPathBuild += part + '/';
                         if (!currentLevel[part]) {
                             currentLevel[part] = { name: part, key: currentPathBuild, children: {} };
@@ -2492,8 +2547,9 @@
             return tree;
         }
 
-        function renderTreeUI(node, depth, container) {
-            if (activeFocusedItem.isFolder && node.key.startsWith(activeFocusedItem.key)) return;
+        function renderTreeUI(node, depth, container, isSaveMode = false) {
+            // 在移动模式下，自身文件夹不可以在内部挂载
+            if (!isSaveMode && activeFocusedItem && activeFocusedItem.isFolder && node.key.startsWith(activeFocusedItem.key)) return;
 
             const isExpanded = expandedFolders.has(node.key);
             const hasChildren = Object.keys(node.children).length > 0;
@@ -2527,22 +2583,27 @@
                     e.stopPropagation();
                     if (isExpanded) expandedFolders.delete(node.key);
                     else expandedFolders.add(node.key);
-                    refreshTreeUI();
+                    isSaveMode ? refreshSaveTreeUI() : refreshTreeUI();
                 };
                 row.appendChild(chevron);
             }
 
             row.onclick = () => {
                 targetMoveFolder = node.key;
-                updateMoveSubtitle();
-                refreshTreeUI();
+                if (isSaveMode) {
+                    updateSaveSubtitle();
+                    refreshSaveTreeUI();
+                } else {
+                    updateMoveSubtitle();
+                    refreshTreeUI();
+                }
             };
 
             container.appendChild(row);
 
             if (isExpanded && hasChildren) {
                 Object.values(node.children).forEach(childNode => {
-                    renderTreeUI(childNode, depth + 1, container);
+                    renderTreeUI(childNode, depth + 1, container, isSaveMode);
                 });
             }
         }
@@ -2550,7 +2611,13 @@
         function refreshTreeUI() {
             const container = document.getElementById("move-tree-container");
             container.innerHTML = "";
-            renderTreeUI(folderTreeData, 0, container);
+            renderTreeUI(folderTreeData, 0, container, false);
+        }
+
+        function refreshSaveTreeUI() {
+            const container = document.getElementById("move-tree-container");
+            container.innerHTML = "";
+            renderTreeUI(myDriveTreeData, 0, container, true);
         }
 
         function updateMoveSubtitle() {
@@ -2559,45 +2626,154 @@
             sub.innerText = `项目将被移动到 "${targetName}"`;
         }
 
+        function updateSaveSubtitle() {
+            const sub = document.getElementById("move-subtitle-text");
+            const targetName = targetMoveFolder === "" ? "我的云盘" : targetMoveFolder.split('/').filter(Boolean).pop();
+            sub.innerText = `项目将保存到 "${targetName}"`;
+        }
+
         function openMoveDialog() {
             closeActionMenu();
-            folderTreeData = parseFolderStructure();
+            currentDialogMode = 'move';
+            folderTreeData = parseFolderStructure(rawFilesData);
             targetMoveFolder = "";
             expandedFolders = new Set([""]);
 
             const isF = activeFocusedItem.isFolder;
-            const name = isF ? activeFocusedItem.key.split('/').filter(Boolean).pop() : activeFocusedItem.key.split('/')
-                .pop();
+            const name = isF ? activeFocusedItem.key.split('/').filter(Boolean).pop() : activeFocusedItem.key.split('/').pop();
+            
             document.getElementById("move-preview-icon").innerText = isF ? "folder" : "description";
             document.getElementById("move-preview-icon").style.color = isF ? "var(--md-sys-color-primary)" : "#9C27B0";
-            document.getElementById("move-preview-name").innerText = name;
+            document.getElementById("move-preview-name").innerText = selectedKeys.size > 1 ? `等 ${selectedKeys.size} 个项目` : name;
+
+            document.getElementById("move-dialog-title").innerText = "移动到";
+            document.getElementById("move-submit-btn").innerText = "移动";
+            document.getElementById("move-submit-btn").onclick = triggerMoveFile;
 
             updateMoveSubtitle();
             refreshTreeUI();
             openDialog('move-dialog');
         }
 
-        async function triggerMoveFile() {
-            const oldKey = activeFocusedItem.key;
-            let newKey = targetMoveFolder + (activeFocusedItem.isFolder ? oldKey.split('/').filter(Boolean).pop() +
-                "/" : oldKey.substring(oldKey.lastIndexOf("/") + 1));
-
-            if (starredKeys.has(oldKey)) {
-                starredKeys.delete(oldKey);
-                starredKeys.add(newKey);
-                saveStarredKeys();
+        async function openSaveDialog(isBatch = false) {
+            closeActionMenu();
+            if (isBatch) {
+                currentRenderedItems.forEach(item => selectedKeys.add(item.key));
+            }
+            if (selectedKeys.size === 0) {
+                showSnackbar("请先选择要转存的文件");
+                return;
             }
 
-            let actionPayload = { type: 'move', items: [{ oldKey, newKey }] };
-            await runMutation(async () => {
-                await fetchAPI(`/move`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ oldKey, newKey })
+            try {
+                // Fetch our personal list for transferring targets
+                const res = await fetchAPI("/list", { method: "GET" });
+                const data = await res.json();
+
+                let tree = parseFolderStructure(data.files);
+                
+                // Add Default My Saves Target logic
+                let hasTransferFolder = false;
+                data.files.forEach(item => {
+                    if (item.key === "我的转存/") hasTransferFolder = true;
                 });
-            }, "操作成功", actionPayload);
+                if (!hasTransferFolder) {
+                    tree.children["我的转存"] = { name: "我的转存", key: "我的转存/", children: {} };
+                }
+
+                myDriveTreeData = tree;
+                targetMoveFolder = "我的转存/";
+                expandedFolders = new Set(["", "我的转存/"]);
+                currentDialogMode = 'save';
+
+                const sampleItem = currentRenderedItems.find(i => selectedKeys.has(i.key));
+                const isF = sampleItem ? sampleItem.isFolder : false;
+                const name = sampleItem ? (isF ? sampleItem.key.split('/').filter(Boolean).pop() : sampleItem.key.split('/').pop()) : "文件";
+
+                document.getElementById("move-preview-icon").innerText = isF ? "folder" : "description";
+                document.getElementById("move-preview-icon").style.color = isF ? "var(--md-sys-color-primary)" : "#9C27B0";
+                document.getElementById("move-preview-name").innerText = selectedKeys.size > 1 ? `等 ${selectedKeys.size} 个项目` : name;
+                
+                document.getElementById("move-dialog-title").innerText = "保存到我的网盘";
+                document.getElementById("move-submit-btn").innerText = "保存";
+                document.getElementById("move-submit-btn").onclick = triggerSaveFile;
+
+                updateSaveSubtitle();
+                refreshSaveTreeUI();
+                openDialog('move-dialog');
+            } catch (e) {
+                showSnackbar("您尚未登录，正前往登录...");
+                setTimeout(() => {
+                    window.open(window.location.origin, '_blank');
+                }, 1500);
+            }
+        }
+
+        async function triggerMoveFile() {
+            const items = currentRenderedItems.filter(item => selectedKeys.has(item.key));
+            if (items.length === 0) return;
+
+            if (items.length === 1) {
+                const oldKey = items[0].key;
+                let newKey = targetMoveFolder + (items[0].isFolder ? oldKey.split('/').filter(Boolean).pop() + "/" : oldKey.substring(oldKey.lastIndexOf("/") + 1));
+
+                if (starredKeys.has(oldKey)) {
+                    starredKeys.delete(oldKey);
+                    starredKeys.add(newKey);
+                    saveStarredKeys();
+                }
+
+                let actionPayload = { type: 'move', items: [{ oldKey, newKey }] };
+                await runMutation(async () => {
+                    await fetchAPI(`/move`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ oldKey, newKey })
+                    });
+                }, "操作成功", actionPayload);
+            } else {
+                await executeBatchMoveAPI(items, targetMoveFolder);
+            }
 
             closeDialog('move-dialog');
+        }
+
+        async function triggerSaveFile() {
+            const items = currentRenderedItems
+                .filter(item => selectedKeys.has(item.key))
+                .map(item => ({ key: item.key, isFolder: item.isFolder }));
+
+            if (items.length === 0) return;
+
+            document.getElementById("move-submit-btn").innerText = "保存中...";
+            document.getElementById("move-submit-btn").disabled = true;
+
+            try {
+                const res = await fetchAPI("/share/save", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        shareId: currentShareId,
+                        code: currentShareCode,
+                        items: items,
+                        targetDir: targetMoveFolder
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showSnackbar("转存成功！已保存到您的网盘");
+                    closeDialog('move-dialog');
+                    selectedKeys.clear();
+                    renderWorkspace(); // Resync UI
+                } else {
+                    showSnackbar("转存失败：" + data.message);
+                }
+            } catch (e) {
+                showSnackbar("转存异常，请重试");
+            } finally {
+                document.getElementById("move-submit-btn").innerText = "保存";
+                document.getElementById("move-submit-btn").disabled = false;
+            }
         }
 
         async function executeBatchMoveAPI(items, targetFolderKey) {
@@ -2725,7 +2901,7 @@
                 if (window.innerWidth < 900) {
                     const drawer = document.getElementById("app-drawer");
                     const overlay = document.getElementById("drawer-overlay");
-                    if (drawer.classList.contains("open") && !drawer.contains(e.target) && !e.target.closest(
+                    if (drawer && drawer.classList.contains("open") && !drawer.contains(e.target) && !e.target.closest(
                         '.icon-btn')) {
                         drawer.classList.remove("open");
                         overlay.classList.remove("show");
