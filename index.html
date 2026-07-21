@@ -1234,6 +1234,9 @@
     <div class="dialog-overlay" id="share-create-dialog">
         <div class="dialog-card">
             <div class="dialog-title">创建分享链接</div>
+            <div id="share-create-desc"
+                style="font-size:14px; color:var(--md-sys-color-on-surface-variant); margin-bottom:16px;">复制下面的链接发给好友：
+            </div>
             <div style="font-size:14px; color:var(--md-sys-color-on-surface-variant); margin-bottom:16px;">复制下面的链接发给好友：
             </div>
 
@@ -1304,7 +1307,7 @@
                 currentShareId = shareId;
                 initShareMode(); // 初始化纯净UI并弹起提取码框
             } else {
-                checkLoginStatus(); // 正常走登录后的应用逻辑
+                initApp(); // 正常走登录后的应用逻辑
             }
         });
 
