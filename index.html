@@ -996,6 +996,49 @@
             transform: translateX(-50%) translateY(0);
             opacity: 1;
         }
+
+
+        /* 加密分享模式专属 UI */
+        .share-auth-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 16px;
+            padding: 24px 16px;
+        }
+
+        .share-icon-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .share-icon-circle .material-symbols-outlined {
+            font-size: 36px;
+        }
+
+        .share-code-input {
+            text-align: center;
+            font-size: 28px;
+            letter-spacing: 8px;
+            width: 100%;
+            max-width: 220px;
+            border-radius: var(--md-shape-large);
+            font-weight: bold;
+            padding: 16px;
+        }
+
+        .share-code-input:focus {
+            border-color: var(--md-sys-color-primary);
+            box-shadow: 0 0 0 4px rgba(245, 124, 0, 0.2);
+        }
     </style>
 </head>
 
@@ -1168,7 +1211,44 @@
             </div>
         </div>
     </div>
+    <!-- 1. 提取码验证弹窗 -->
+    <div class="dialog-overlay" id="share-auth-dialog">
+        <div class="dialog-card">
+            <div class="share-auth-box">
+                <div class="share-icon-circle">
+                    <span class="material-symbols-outlined">lock</span>
+                </div>
+                <div style="font-size: 22px; color: var(--md-sys-color-on-surface);">请输入提取码</div>
+                <div style="font-size: 14px; color: var(--md-sys-color-on-surface-variant);">该分享已加密，请输入4位提取码查看内容</div>
 
+                <input type="text" id="share-code-input" class="md-input share-code-input" placeholder="输入提取码"
+                    maxlength="4">
+
+                <button class="btn-filled ripple-btn" onclick="verifyShareCode()"
+                    style="width: 100%; max-width: 220px; justify-content: center; margin-top: 8px;">提取文件</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 分享生成结果弹窗 -->
+    <div class="dialog-overlay" id="share-create-dialog">
+        <div class="dialog-card">
+            <div class="dialog-title">创建分享链接</div>
+            <div style="font-size:14px; color:var(--md-sys-color-on-surface-variant); margin-bottom:16px;">复制下面的链接发给好友：
+            </div>
+
+            <div
+                style="background:var(--md-sys-color-surface-container); padding:12px; border-radius:var(--md-shape-medium); display:flex; align-items:center; margin-bottom:16px;">
+                <textarea id="share-link-result" class="md-input" readonly
+                    style="flex:1; border:none; background:transparent; resize:none; font-size:14px; min-height:80px;"></textarea>
+            </div>
+
+            <div class="dialog-actions">
+                <button class="btn-text ripple-btn" onclick="closeDialog('share-create-dialog')">关闭</button>
+                <button class="btn-filled ripple-btn" onclick="copyShareInfo()">复制全部内容</button>
+            </div>
+        </div>
+    </div>
     <div class="snackbar" id="global-snackbar">操作成功</div>
 
     <script>
@@ -1205,10 +1285,27 @@
         let activeUploadAborter = null;
         let isUploading = false;
 
+
+        // === 分享模式全局变量 ===
+        let isShareMode = false;
+        let currentShareId = "";
+        let currentShareCode = "";
+        let shareRootName = "";
+
         // ==================== 初始化与用户逻辑 ====================
         window.addEventListener("DOMContentLoaded", () => {
             setupGlobalListeners();
-            initApp();
+            // 监听 URL，如果带有 shareId，直接进入极简纯净的访客分享模式
+            const urlParams = new URLSearchParams(window.location.search);
+            const shareId = urlParams.get('shareId');
+
+            if (shareId) {
+                isShareMode = true;
+                currentShareId = shareId;
+                initShareMode(); // 初始化纯净UI并弹起提取码框
+            } else {
+                checkLoginStatus(); // 正常走登录后的应用逻辑
+            }
         });
 
         async function initApp() {
@@ -1731,6 +1828,21 @@
 
         function renderBreadcrumbs() {
             const box = document.getElementById("breadcrumbs");
+
+            // 如果处于分享访客模式，头部显示分享名称
+            if (isShareMode) {
+                box.innerHTML = `<span class="crumb ripple-btn" onclick="jumpToPath('')"><span class="material-symbols-outlined" style="vertical-align:middle; font-size:20px; margin-right:4px;">share</span>${shareRootName || '分享的文件'}</span>`;
+                if (!currentPath) return;
+                const parts = currentPath.split("/").filter(p => p);
+                let buildPath = "";
+                parts.forEach((part) => {
+                    buildPath += part + "/";
+                    box.innerHTML += `<span class="material-symbols-outlined crumb-separator">chevron_right</span><span class="crumb ripple-btn" onclick="jumpToPath('${buildPath}')">${part}</span>`;
+                });
+                return;
+            }
+
+
             if (currentView === "starred") {
                 box.innerHTML = `<span class="crumb ripple-btn">已加星标</span>`;
                 return;
@@ -2025,46 +2137,48 @@
             menu.innerHTML = "";
 
             if (key.startsWith('.trash/')) {
-                menu.innerHTML +=
-                    `<div class="menu-item ripple-btn" onclick="triggerRestore()"><span class="material-symbols-outlined">restore_from_trash</span>恢复文件</div>`;
-                menu.innerHTML +=
-                    `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete_forever</span>彻底删除</div>`;
-            } else {
-                const starText = starredKeys.has(key) ? "取消星标" : "添加星标";
-                const starIcon = starredKeys.has(key) ? "star" : "star_border";
-
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerRestore()"><span class="material-symbols-outlined">restore_from_trash</span>恢复文件</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete_forever</span>彻底删除</div>`;
+            } else if (isShareMode) {
+                // === 极简分享模式下的菜单：只能打开、下载或预览 ===
                 if (isFolder) {
-                    menu.innerHTML +=
-                        `<div class="menu-item ripple-btn" onclick="jumpToPath('${key}'); closeActionMenu();"><span class="material-symbols-outlined">folder_open</span>打开文件夹</div>`;
+                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="jumpToPath('${key}'); closeActionMenu();"><span class="material-symbols-outlined">folder_open</span>打开文件夹</div>`;
                 } else {
                     const ext = key.split('.').pop().toLowerCase();
                     const previewable = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'pdf', 'txt', 'md'].includes(ext);
                     if (previewable) {
-                        menu.innerHTML +=
-                            `<div class="menu-item ripple-btn" onclick="triggerPreview()"><span class="material-symbols-outlined">visibility</span>在线预览</div>`;
+                        menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerSharePreview()"><span class="material-symbols-outlined">visibility</span>在线预览</div>`;
                     }
-                    menu.innerHTML +=
-                        `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
-                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerCopyShareLink()"><span class="material-symbols-outlined">link</span>复制下载链接</div>`;
+                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerShareDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
+                }
+            } else {
+                // === 正常模式下的菜单 (主人状态) ===
+                const starText = starredKeys.has(key) ? "取消星标" : "添加星标";
+                const starIcon = starredKeys.has(key) ? "star" : "star_border";
+
+                if (isFolder) {
+                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="jumpToPath('${key}'); closeActionMenu();"><span class="material-symbols-outlined">folder_open</span>打开文件夹</div>`;
+                } else {
+                    const ext = key.split('.').pop().toLowerCase();
+                    const previewable = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'pdf', 'txt', 'md'].includes(ext);
+                    if (previewable) {
+                        menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerPreview()"><span class="material-symbols-outlined">visibility</span>在线预览</div>`;
+                    }
+                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerDownload()"><span class="material-symbols-outlined">download</span>下载文件</div>`;
                 }
 
-                menu.innerHTML +=
-                    `<div class="menu-item ripple-btn" onclick="handleCopy(); closeActionMenu();"><span class="material-symbols-outlined">content_copy</span>复制</div>`;
-                menu.innerHTML +=
-                    `<div class="menu-item ripple-btn" onclick="handleCut(); closeActionMenu();"><span class="material-symbols-outlined">content_cut</span>剪切</div>`;
+                // 将原先的 triggerCopyShareLink 替换为专属分享链接
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="triggerCreateShare()"><span class="material-symbols-outlined" style="color:var(--md-sys-color-primary);">share</span>加密分享</div>`;
+
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCopy(); closeActionMenu();"><span class="material-symbols-outlined">content_copy</span>复制</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handleCut(); closeActionMenu();"><span class="material-symbols-outlined">content_cut</span>剪切</div>`;
                 if (clipboard.type && clipboard.items.length > 0) {
-                    menu.innerHTML +=
-                        `<div class="menu-item ripple-btn" onclick="handlePaste(); closeActionMenu();"><span class="material-symbols-outlined">content_paste</span>粘贴至当前</div>`;
+                    menu.innerHTML += `<div class="menu-item ripple-btn" onclick="handlePaste(); closeActionMenu();"><span class="material-symbols-outlined">content_paste</span>粘贴至当前</div>`;
                 }
-
-                menu.innerHTML +=
-                    `<div class="menu-item ripple-btn" onclick="toggleStar('${key}')"><span class="material-symbols-outlined">${starIcon}</span>${starText}</div>`;
-                menu.innerHTML +=
-                    `<div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>`;
-                menu.innerHTML +=
-                    `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
-                menu.innerHTML +=
-                    `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="toggleStar('${key}')"><span class="material-symbols-outlined">${starIcon}</span>${starText}</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openRenameDialog()"><span class="material-symbols-outlined">edit</span>重命名</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn" onclick="openMoveDialog()"><span class="material-symbols-outlined">drive_file_move</span>移动</div>`;
+                menu.innerHTML += `<div class="menu-item ripple-btn danger-item" onclick="triggerDelete()"><span class="material-symbols-outlined">delete</span>删除</div>`;
             }
 
             menu.classList.add("show");
@@ -2077,15 +2191,125 @@
             if (leftPos + menu.offsetWidth > window.innerWidth) leftPos = window.innerWidth - menu.offsetWidth - 10;
             menu.style.left = `${leftPos}px`;
         }
+        // ==================== [新增] 网盘式分享业务逻辑 ====================
 
-        async function triggerCopyShareLink() {
-            const url = `${window.location.origin}/download?key=${encodeURIComponent(activeFocusedItem.key)}`;
-            navigator.clipboard.writeText(url).then(() => {
-                showSnackbar("下载链接已复制到剪贴板");
-            }).catch(() => {
-                showSnackbar("复制失败，请手动复制链接");
-            });
+        // 1. 初始化访客专属纯净 UI 界面
+        function initShareMode() {
+            // 强制隐藏主人专属的面板 (侧边栏、搜索、上传新建等操作)
+            if (window.innerWidth >= 900) document.getElementById("app-drawer").style.display = "none";
+            document.querySelector(".main-workspace").style.margin = "0";
+            document.querySelector(".main-workspace").style.borderRadius = "0";
+            document.querySelector(".search-container").style.display = "none";
+            document.querySelector(".history-actions").style.display = "none";
+            document.querySelector(".list-header-actions").style.display = "none";
+
+            // 替换顶部头像为 "退出分享"
+            document.getElementById("user-profile-box").style.display = "none";
+            const topBarRight = document.querySelector(".top-bar-right");
+            const exitBtn = document.createElement("button");
+            exitBtn.className = "btn-text ripple-btn";
+            exitBtn.innerHTML = '<span class="material-symbols-outlined" style="vertical-align:middle;margin-right:4px;">logout</span>退出';
+            exitBtn.onclick = () => { window.location.href = window.location.origin; }; // 点击退回网盘首页
+            topBarRight.appendChild(exitBtn);
+
+            // 弹起提取码对话框
+            openDialog('share-auth-dialog');
+        }
+
+        // 2. 访客输入提取码并校验
+        async function verifyShareCode() {
+            const codeInput = document.getElementById("share-code-input").value.trim();
+            if (!codeInput || codeInput.length !== 4) return showSnackbar("请输入4位提取码");
+
+            try {
+                // 使用原生的 fetch 而不是 fetchAPI，避免把访客拦截重定向去登录系统
+                const res = await fetch("/api/share/list", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ shareId: currentShareId, code: codeInput })
+                });
+
+                const data = await res.json();
+                if (!data.success) {
+                    showSnackbar(data.message);
+                    return;
+                }
+
+                currentShareCode = codeInput; // 保存有效的提取码
+                closeDialog('share-auth-dialog');
+                showSnackbar("提取成功");
+
+                // 我们利用后端递归拿到的相对路径文件流，直接塞进原始的网盘渲染器中
+                shareRootName = data.shareName;
+                rawFilesData = data.files.map(f => ({ ...f, key: f.key }));
+
+                currentPath = "";
+                renderWorkspace(); // 完美复用文件夹切换、面包屑渲染！
+            } catch (e) {
+                showSnackbar("网络异常，验证失败");
+            }
+        }
+
+        // 3. 访客：在分享模式下下载/预览
+        function getShareFileUrl(preview = false) {
+            let url = `/api/share/download?shareId=${currentShareId}&code=${currentShareCode}&subPath=${encodeURIComponent(activeFocusedItem.key)}`;
+            if (preview) url += `&preview=1&inline=true`;
+            return url;
+        }
+
+        function triggerSharePreview() {
+            window.open(getShareFileUrl(true), "_blank");
             closeActionMenu();
+        }
+
+        function triggerShareDownload() {
+            const a = document.createElement("a");
+            a.href = getShareFileUrl(false);
+            a.download = "";
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            closeActionMenu();
+        }
+
+        // 4. 主人：生成专属分享链接并写入 KV
+        async function triggerCreateShare() {
+            closeActionMenu();
+            const key = activeFocusedItem.key;
+            document.getElementById("share-create-desc").innerText = "正在为您生成专属链接...";
+            document.getElementById("share-link-result").value = "";
+            openDialog('share-create-dialog');
+
+            try {
+                const res = await fetchAPI("/share/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ key })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    document.getElementById("share-create-desc").innerText = "有效期 30 天，复制下面的信息发送给好友：";
+                    const shareUrl = `${window.location.origin}/?shareId=${data.shareId}`;
+                    document.getElementById("share-link-result").value = `分享文件：${key.split('/').filter(Boolean).pop()}\n链接：${shareUrl}\n提取码：${data.code}`;
+                } else {
+                    showSnackbar(data.message);
+                    closeDialog('share-create-dialog');
+                }
+            } catch (e) {
+                showSnackbar("生成分享失败，请重试");
+                closeDialog('share-create-dialog');
+            }
+        }
+
+        // 主人一键复制结果
+        function copyShareInfo() {
+            const text = document.getElementById("share-link-result").value;
+            navigator.clipboard.writeText(text).then(() => {
+                showSnackbar("链接和提取码已复制到剪贴板！");
+                closeDialog('share-create-dialog');
+            }).catch(() => { showSnackbar("复制失败，请手动框选复制"); });
         }
 
         function closeActionMenu() { document.getElementById("action-menu").classList.remove("show"); }
